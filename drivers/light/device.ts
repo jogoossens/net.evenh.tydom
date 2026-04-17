@@ -33,7 +33,19 @@ class Light extends Device {
       },
     );
 
+    await this.seedInitialState();
+
     this.log('Light has been initialized');
+  }
+
+  private async seedInitialState() {
+    const { deviceId, endpointId } = this.getData();
+    try {
+      const data = await this.api.getDeviceState(deviceId, endpointId);
+      for (const element of data) await this.onTydomStateChange(element);
+    } catch (err) {
+      this.error('Failed to seed initial state:', err);
+    }
   }
 
   // Clean up OOB level changes.

@@ -1,0 +1,57 @@
+{
+  "id": "setpoint_unmet",
+  "title": {
+    "en": "Cannot reach setpoint (mode-aware)",
+    "nl": "Kan setpoint niet bereiken (modus-afhankelijk)"
+  },
+  "titleFormatted": {
+    "en": "Cannot reach setpoint — off by !{{more than|at least}} [[delta]]°C in the wrong direction",
+    "nl": "Kan setpoint niet bereiken — !{{meer dan|minstens}} [[delta]]°C in de verkeerde richting"
+  },
+  "hint": {
+    "en": "MODE-AWARE. Fires when the room temperature is at least [delta]°C off the setpoint in the direction the HVAC is failing.\n\n• In HEATING mode: fires when the room is colder than (setpoint − delta).\n• In COOLING mode: fires when the room is warmer than (setpoint + delta).\n• In AUTO / OFF: does NOT fire (unclear which direction is 'wrong').\n\nTypical use: trigger 'Turn boost on' when the HVAC is falling behind, regardless of season.",
+    "nl": "MODUS-AFHANKELIJK. Activeert wanneer de kamertemperatuur minstens [delta]°C naast het setpoint zit in de richting waarin de HVAC faalt.\n\n• In VERWARMEN: activeert wanneer kamer kouder is dan (setpoint − delta).\n• In KOELEN: activeert wanneer kamer warmer is dan (setpoint + delta).\n• In AUTO / UIT: activeert NIET."
+  },
+  "args": [
+    {
+      "name": "device",
+      "type": "device",
+      "filter": "driver_id=thermostat"
+    },
+    {
+      "name": "delta",
+      "type": "number",
+      "title": { "en": "Shortfall (°C)", "nl": "Tekort (°C)" },
+      "placeholder": { "en": "e.g. 1" },
+      "min": 0.1,
+      "max": 15,
+      "step": 0.1
+    }
+  ],
+  "tokens": [
+    {
+      "name": "measured",
+      "type": "number",
+      "title": { "en": "Measured temperature", "nl": "Gemeten temperatuur" },
+      "example": 18.5
+    },
+    {
+      "name": "setpoint",
+      "type": "number",
+      "title": { "en": "Setpoint", "nl": "Setpoint" },
+      "example": 20.0
+    },
+    {
+      "name": "shortfall",
+      "type": "number",
+      "title": { "en": "Shortfall (°C)", "nl": "Tekort (°C)" },
+      "example": 1.5
+    },
+    {
+      "name": "mode",
+      "type": "string",
+      "title": { "en": "HVAC mode", "nl": "HVAC modus" },
+      "example": "HEATING"
+    }
+  ]
+}

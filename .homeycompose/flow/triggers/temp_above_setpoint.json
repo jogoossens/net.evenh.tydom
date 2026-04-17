@@ -1,0 +1,51 @@
+{
+  "id": "temp_above_setpoint",
+  "title": {
+    "en": "Temperature is above setpoint",
+    "nl": "Temperatuur is boven setpoint"
+  },
+  "titleFormatted": {
+    "en": "Temperature is !{{more than|at least}} [[delta]]°C above setpoint",
+    "nl": "Temperatuur is !{{meer dan|minstens}} [[delta]]°C boven setpoint"
+  },
+  "hint": {
+    "en": "Fires when the measured room temperature rises at or above (setpoint + delta). Evaluated on every temperature or setpoint update the thermostat reports.",
+    "nl": "Activeert wanneer de gemeten kamertemperatuur boven (setpoint + delta) komt. Geëvalueerd bij elke temperatuur- of setpoint-update van de thermostaat."
+  },
+  "args": [
+    {
+      "name": "device",
+      "type": "device",
+      "filter": "driver_id=thermostat"
+    },
+    {
+      "name": "delta",
+      "type": "number",
+      "title": { "en": "Delta (°C)", "nl": "Verschil (°C)" },
+      "placeholder": { "en": "e.g. 2" },
+      "min": 0.1,
+      "max": 15,
+      "step": 0.1
+    }
+  ],
+  "tokens": [
+    {
+      "name": "measured",
+      "type": "number",
+      "title": { "en": "Measured temperature", "nl": "Gemeten temperatuur" },
+      "example": 22.5
+    },
+    {
+      "name": "setpoint",
+      "type": "number",
+      "title": { "en": "Setpoint", "nl": "Setpoint" },
+      "example": 20.0
+    },
+    {
+      "name": "difference",
+      "type": "number",
+      "title": { "en": "Difference (°C)", "nl": "Verschil (°C)" },
+      "example": 2.5
+    }
+  ]
+}

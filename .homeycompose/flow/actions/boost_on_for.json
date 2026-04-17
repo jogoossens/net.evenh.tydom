@@ -1,0 +1,31 @@
+{
+  "id": "boost_on_for",
+  "title": {
+    "en": "Turn boost on for a duration",
+    "nl": "Boost inschakelen voor een duur"
+  },
+  "titleFormatted": {
+    "en": "Turn boost on for [[minutes]] minute(s)",
+    "nl": "Boost inschakelen voor [[minutes]] minuut(en)"
+  },
+  "hint": {
+    "en": "Forces the thermostat to max (30°C heating / 10°C cooling) for a specific duration, then auto-cancels. The Tydom gateway owns the countdown — if power cycles or the app restarts, boost continues until the timer elapses.",
+    "nl": "Laat de thermostaat op max draaien (30°C verwarmen / 10°C koelen) voor een bepaalde duur, daarna stopt boost automatisch. De Tydom gateway bewaakt de countdown zelf."
+  },
+  "args": [
+    {
+      "name": "device",
+      "type": "device",
+      "filter": "driver_id=thermostat"
+    },
+    {
+      "name": "minutes",
+      "type": "number",
+      "title": { "en": "Duration (minutes)", "nl": "Duur (minuten)" },
+      "placeholder": { "en": "e.g. 60" },
+      "min": 1,
+      "max": 65535,
+      "step": 1
+    }
+  ]
+}

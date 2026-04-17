@@ -26,6 +26,361 @@
     "name": "Even Holthe",
     "email": "even.holthe@me.com"
   },
+  "flow": {
+    "triggers": [
+      {
+        "id": "setpoint_reached",
+        "title": {
+          "en": "Setpoint reached (mode-aware)",
+          "nl": "Setpoint bereikt (modus-afhankelijk)"
+        },
+        "titleFormatted": {
+          "en": "Setpoint reached — within [[tolerance]]°C tolerance",
+          "nl": "Setpoint bereikt — binnen [[tolerance]]°C tolerantie"
+        },
+        "hint": {
+          "en": "MODE-AWARE. Fires when the room temperature has hit or passed the setpoint, within [tolerance]°C margin.\n\n• In HEATING mode: fires when the room has warmed up to at least (setpoint − tolerance).\n• In COOLING mode: fires when the room has cooled down to at most (setpoint + tolerance).\n• In AUTO / OFF: does NOT fire (unclear which direction is 'reached').\n\nTypical use: trigger 'Turn boost off' once the target is reached, regardless of season. Set tolerance to 0 for exact match, or e.g. 0.2°C to end boost slightly before hitting setpoint.",
+          "nl": "MODUS-AFHANKELIJK. Activeert wanneer de kamertemperatuur het setpoint heeft bereikt of gepasseerd, binnen [tolerance]°C marge."
+        },
+        "args": [
+          {
+            "name": "device",
+            "type": "device",
+            "filter": "driver_id=thermostat"
+          },
+          {
+            "name": "tolerance",
+            "type": "number",
+            "title": {
+              "en": "Tolerance (°C)",
+              "nl": "Tolerantie (°C)"
+            },
+            "placeholder": {
+              "en": "e.g. 0.1"
+            },
+            "min": 0,
+            "max": 5,
+            "step": 0.1
+          }
+        ],
+        "tokens": [
+          {
+            "name": "measured",
+            "type": "number",
+            "title": {
+              "en": "Measured temperature",
+              "nl": "Gemeten temperatuur"
+            },
+            "example": 20.1
+          },
+          {
+            "name": "setpoint",
+            "type": "number",
+            "title": {
+              "en": "Setpoint",
+              "nl": "Setpoint"
+            },
+            "example": 20
+          },
+          {
+            "name": "mode",
+            "type": "string",
+            "title": {
+              "en": "HVAC mode",
+              "nl": "HVAC modus"
+            },
+            "example": "HEATING"
+          }
+        ]
+      },
+      {
+        "id": "setpoint_unmet",
+        "title": {
+          "en": "Cannot reach setpoint (mode-aware)",
+          "nl": "Kan setpoint niet bereiken (modus-afhankelijk)"
+        },
+        "titleFormatted": {
+          "en": "Cannot reach setpoint — off by !{{more than|at least}} [[delta]]°C in the wrong direction",
+          "nl": "Kan setpoint niet bereiken — !{{meer dan|minstens}} [[delta]]°C in de verkeerde richting"
+        },
+        "hint": {
+          "en": "MODE-AWARE. Fires when the room temperature is at least [delta]°C off the setpoint in the direction the HVAC is failing.\n\n• In HEATING mode: fires when the room is colder than (setpoint − delta).\n• In COOLING mode: fires when the room is warmer than (setpoint + delta).\n• In AUTO / OFF: does NOT fire (unclear which direction is 'wrong').\n\nTypical use: trigger 'Turn boost on' when the HVAC is falling behind, regardless of season.",
+          "nl": "MODUS-AFHANKELIJK. Activeert wanneer de kamertemperatuur minstens [delta]°C naast het setpoint zit in de richting waarin de HVAC faalt.\n\n• In VERWARMEN: activeert wanneer kamer kouder is dan (setpoint − delta).\n• In KOELEN: activeert wanneer kamer warmer is dan (setpoint + delta).\n• In AUTO / UIT: activeert NIET."
+        },
+        "args": [
+          {
+            "name": "device",
+            "type": "device",
+            "filter": "driver_id=thermostat"
+          },
+          {
+            "name": "delta",
+            "type": "number",
+            "title": {
+              "en": "Shortfall (°C)",
+              "nl": "Tekort (°C)"
+            },
+            "placeholder": {
+              "en": "e.g. 1"
+            },
+            "min": 0.1,
+            "max": 15,
+            "step": 0.1
+          }
+        ],
+        "tokens": [
+          {
+            "name": "measured",
+            "type": "number",
+            "title": {
+              "en": "Measured temperature",
+              "nl": "Gemeten temperatuur"
+            },
+            "example": 18.5
+          },
+          {
+            "name": "setpoint",
+            "type": "number",
+            "title": {
+              "en": "Setpoint",
+              "nl": "Setpoint"
+            },
+            "example": 20
+          },
+          {
+            "name": "shortfall",
+            "type": "number",
+            "title": {
+              "en": "Shortfall (°C)",
+              "nl": "Tekort (°C)"
+            },
+            "example": 1.5
+          },
+          {
+            "name": "mode",
+            "type": "string",
+            "title": {
+              "en": "HVAC mode",
+              "nl": "HVAC modus"
+            },
+            "example": "HEATING"
+          }
+        ]
+      },
+      {
+        "id": "temp_above_setpoint",
+        "title": {
+          "en": "Temperature is above setpoint",
+          "nl": "Temperatuur is boven setpoint"
+        },
+        "titleFormatted": {
+          "en": "Temperature is !{{more than|at least}} [[delta]]°C above setpoint",
+          "nl": "Temperatuur is !{{meer dan|minstens}} [[delta]]°C boven setpoint"
+        },
+        "hint": {
+          "en": "Fires when the measured room temperature rises at or above (setpoint + delta). Evaluated on every temperature or setpoint update the thermostat reports.",
+          "nl": "Activeert wanneer de gemeten kamertemperatuur boven (setpoint + delta) komt. Geëvalueerd bij elke temperatuur- of setpoint-update van de thermostaat."
+        },
+        "args": [
+          {
+            "name": "device",
+            "type": "device",
+            "filter": "driver_id=thermostat"
+          },
+          {
+            "name": "delta",
+            "type": "number",
+            "title": {
+              "en": "Delta (°C)",
+              "nl": "Verschil (°C)"
+            },
+            "placeholder": {
+              "en": "e.g. 2"
+            },
+            "min": 0.1,
+            "max": 15,
+            "step": 0.1
+          }
+        ],
+        "tokens": [
+          {
+            "name": "measured",
+            "type": "number",
+            "title": {
+              "en": "Measured temperature",
+              "nl": "Gemeten temperatuur"
+            },
+            "example": 22.5
+          },
+          {
+            "name": "setpoint",
+            "type": "number",
+            "title": {
+              "en": "Setpoint",
+              "nl": "Setpoint"
+            },
+            "example": 20
+          },
+          {
+            "name": "difference",
+            "type": "number",
+            "title": {
+              "en": "Difference (°C)",
+              "nl": "Verschil (°C)"
+            },
+            "example": 2.5
+          }
+        ]
+      },
+      {
+        "id": "temp_below_setpoint",
+        "title": {
+          "en": "Temperature is below setpoint",
+          "nl": "Temperatuur is onder setpoint"
+        },
+        "titleFormatted": {
+          "en": "Temperature is !{{more than|at least}} [[delta]]°C below setpoint",
+          "nl": "Temperatuur is !{{meer dan|minstens}} [[delta]]°C onder setpoint"
+        },
+        "hint": {
+          "en": "Fires when the measured room temperature falls at or below (setpoint − delta). Evaluated on every temperature or setpoint update the thermostat reports.",
+          "nl": "Activeert wanneer de gemeten kamertemperatuur onder (setpoint − delta) komt. Geëvalueerd bij elke temperatuur- of setpoint-update van de thermostaat."
+        },
+        "args": [
+          {
+            "name": "device",
+            "type": "device",
+            "filter": "driver_id=thermostat"
+          },
+          {
+            "name": "delta",
+            "type": "number",
+            "title": {
+              "en": "Delta (°C)",
+              "nl": "Verschil (°C)"
+            },
+            "placeholder": {
+              "en": "e.g. 2"
+            },
+            "min": 0.1,
+            "max": 15,
+            "step": 0.1
+          }
+        ],
+        "tokens": [
+          {
+            "name": "measured",
+            "type": "number",
+            "title": {
+              "en": "Measured temperature",
+              "nl": "Gemeten temperatuur"
+            },
+            "example": 18.5
+          },
+          {
+            "name": "setpoint",
+            "type": "number",
+            "title": {
+              "en": "Setpoint",
+              "nl": "Setpoint"
+            },
+            "example": 20
+          },
+          {
+            "name": "difference",
+            "type": "number",
+            "title": {
+              "en": "Difference (°C)",
+              "nl": "Verschil (°C)"
+            },
+            "example": 1.5
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "boost_off",
+        "title": {
+          "en": "Turn boost off",
+          "nl": "Boost uitschakelen"
+        },
+        "titleFormatted": {
+          "en": "Turn boost off",
+          "nl": "Boost uitschakelen"
+        },
+        "hint": {
+          "en": "Cancels the thermostat boost (clears the setpoint derogation) so the normal schedule / setpoint resumes.",
+          "nl": "Annuleert de thermostaat boost zodat het normale schema / setpoint hervat wordt."
+        },
+        "args": [
+          {
+            "name": "device",
+            "type": "device",
+            "filter": "driver_id=thermostat"
+          }
+        ]
+      },
+      {
+        "id": "boost_on",
+        "title": {
+          "en": "Turn boost on",
+          "nl": "Boost inschakelen"
+        },
+        "titleFormatted": {
+          "en": "Turn boost on",
+          "nl": "Boost inschakelen"
+        },
+        "hint": {
+          "en": "Forces the thermostat to run at max (setpoint 30°C for heating, 10°C for cooling) until boost is turned off. Uses the Tydom setpoint-derogation mechanism.",
+          "nl": "Laat de thermostaat op max draaien (setpoint 30°C voor verwarmen, 10°C voor koelen) tot boost uit wordt gezet. Gebruikt het Tydom setpoint-derogation mechanisme."
+        },
+        "args": [
+          {
+            "name": "device",
+            "type": "device",
+            "filter": "driver_id=thermostat"
+          }
+        ]
+      },
+      {
+        "id": "boost_on_for",
+        "title": {
+          "en": "Turn boost on for a duration",
+          "nl": "Boost inschakelen voor een duur"
+        },
+        "titleFormatted": {
+          "en": "Turn boost on for [[minutes]] minute(s)",
+          "nl": "Boost inschakelen voor [[minutes]] minuut(en)"
+        },
+        "hint": {
+          "en": "Forces the thermostat to max (30°C heating / 10°C cooling) for a specific duration, then auto-cancels. The Tydom gateway owns the countdown — if power cycles or the app restarts, boost continues until the timer elapses.",
+          "nl": "Laat de thermostaat op max draaien (30°C verwarmen / 10°C koelen) voor een bepaalde duur, daarna stopt boost automatisch. De Tydom gateway bewaakt de countdown zelf."
+        },
+        "args": [
+          {
+            "name": "device",
+            "type": "device",
+            "filter": "driver_id=thermostat"
+          },
+          {
+            "name": "minutes",
+            "type": "number",
+            "title": {
+              "en": "Duration (minutes)",
+              "nl": "Duur (minuten)"
+            },
+            "placeholder": {
+              "en": "e.g. 60"
+            },
+            "min": 1,
+            "max": 65535,
+            "step": 1
+          }
+        ]
+      }
+    ]
+  },
   "drivers": [
     {
       "name": {
@@ -68,16 +423,81 @@
       },
       "class": "thermostat",
       "capabilities": [
-        "target_temperature",
         "measure_temperature",
-        "onoff"
+        "target_temperature",
+        "thermostat_mode",
+        "onoff",
+        "onoff.boost",
+        "alarm_battery",
+        "alarm_generic.production",
+        "alarm_generic.sensor"
       ],
+      "capabilitiesOptions": {
+        "measure_temperature": {
+          "title": {
+            "en": "Temperature",
+            "nl": "Temperatuur"
+          },
+          "insights": true,
+          "preventInsights": false,
+          "units": {
+            "en": "°C"
+          }
+        },
+        "target_temperature": {
+          "title": {
+            "en": "Setpoint",
+            "nl": "Gewenste temperatuur"
+          },
+          "insights": true,
+          "preventInsights": false,
+          "min": 10,
+          "max": 30,
+          "step": 0.5,
+          "units": {
+            "en": "°C"
+          }
+        },
+        "onoff.boost": {
+          "title": {
+            "en": "Boost",
+            "nl": "Boost"
+          },
+          "insightsTitleTrue": {
+            "en": "Boost turned on"
+          },
+          "insightsTitleFalse": {
+            "en": "Boost turned off"
+          },
+          "uiComponent": "toggle",
+          "uiQuickAction": true,
+          "preventInsights": false
+        },
+        "alarm_generic.production": {
+          "title": {
+            "en": "Production fault",
+            "nl": "Productiestoring"
+          }
+        },
+        "alarm_generic.sensor": {
+          "title": {
+            "en": "Sensor fault",
+            "nl": "Sensorstoring"
+          }
+        }
+      },
       "platforms": [
         "local"
       ],
       "connectivity": [
         "lan"
       ],
+      "energy": {
+        "batteries": [
+          "AAA",
+          "AAA"
+        ]
+      },
       "images": {
         "small": "/drivers/thermostat/assets/images/small.png",
         "large": "/drivers/thermostat/assets/images/large.png",

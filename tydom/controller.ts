@@ -19,8 +19,10 @@ import {
   asyncWait,
   getEndpointDetailsFromMeta,
   getEndpointGroupIdFromGroups,
+  getTydomDeviceData,
   resolveEndpointCategory,
 } from './helpers';
+import { TydomEndpointData } from './typings';
 
 const DEFAULT_REFRESH_INTERVAL_SEC = 4 * 60 * 60; // 4 hours
 
@@ -359,6 +361,53 @@ export default class TydomController extends EventEmitter {
     )(enabled ? 'NORMAL' : 'STOP');
   }
 
+  public async updateThermostatMode(
+    deviceId: string,
+    endpointId: string,
+    tydomAuthorization: 'HEATING' | 'COOLING' | 'AUTO' | 'STOP',
+  ) {
+    await this.doPut(deviceId, endpointId, 'authorization')(tydomAuthorization);
+  }
+
+  public async updateThermostatBoost(
+    deviceId: string,
+    endpointId: string,
+    enabled: boolean,
+  ) {
+    await this.doPut(deviceId, endpointId, 'boostOn')(enabled);
+  }
+
+  // Start a setpoint derogation. This is the Tydom-native mechanism for "force
+  // the thermostat to run at a specific setpoint for N minutes". Writing all
+  // three fields in a single PUT arms the derogation; on this Tybox model the
+  // derogation overrides the weekly schedule until timeDelay reaches 0 or the
+  // caller cancels.
+  public async startThermostatDerogation(
+    deviceId: string,
+    endpointId: string,
+    setpoint: number,
+    minutes: number,
+  ) {
+    await this.apiClient.put(
+      `/devices/${deviceId}/endpoints/${endpointId}/data`,
+      [
+        { name: 'delaySetpoint', value: setpoint },
+        { name: 'delayThermicLevel', value: 'COMFORT' },
+        { name: 'timeDelay', value: minutes },
+      ],
+    );
+  }
+
+  public async cancelThermostatDerogation(
+    deviceId: string,
+    endpointId: string,
+  ) {
+    await this.apiClient.put(
+      `/devices/${deviceId}/endpoints/${endpointId}/data`,
+      [{ name: 'timeDelay', value: 0 }],
+    );
+  }
+
   public subscribeTo(id: string, fn: (update: TydomDataElement) => void) {
     this.log.debug(`Adding subscriber for ID=${id}`);
     this.subscribers.set(id, fn);
@@ -367,6 +416,13 @@ export default class TydomController extends EventEmitter {
   public removeSubscription(id: string) {
     this.log.debug(`Removing subscriber for ID=${id}`);
     this.subscribers.delete(id);
+  }
+
+  public async getDeviceState(
+    deviceId: number,
+    endpointId: number,
+  ): Promise<TydomEndpointData> {
+    return getTydomDeviceData(this.apiClient, { deviceId, endpointId });
   }
 
   public getDevices(category: Categories) {

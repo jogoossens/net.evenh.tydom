@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
+</head>
+<body>
+  <header class="homey-header">
+    <h1 class="homey-title">Delta Dore Tydom</h1>
+    <p class="homey-subtitle">Enter your Tydom 1.0 gateway credentials.</p>
+  </header>
+
+  <fieldset class="homey-form-fieldset">
+    <legend class="homey-form-legend">Gateway</legend>
+
+    <div class="homey-form-group">
+      <label class="homey-form-label" for="hostname">Hostname / IP</label>
+      <input class="homey-form-input" id="hostname" type="text" placeholder="192.168.1.11" />
+      <p class="homey-form-helper-text">Local IP address of your Tydom gateway.</p>
+    </div>
+
+    <div class="homey-form-group">
+      <label class="homey-form-label" for="username">MAC address (username)</label>
+      <input class="homey-form-input" id="username" type="text" placeholder="001A25XXXXXX" />
+      <p class="homey-form-helper-text">12 hex chars, uppercase, no separators — from the sticker on the back.</p>
+    </div>
+
+    <div class="homey-form-group">
+      <label class="homey-form-label" for="password">Password</label>
+      <input class="homey-form-input" id="password" type="password" placeholder="Sticker password" />
+      <p class="homey-form-helper-text">Gateway sticker password — not your Delta Dore account password.</p>
+    </div>
+  </fieldset>
+
+  <button id="save" class="homey-button-primary-full">Save &amp; reconnect</button>
+
+  <p id="status" style="margin-top: 1em; color: #888;"></p>
+
+  <script type="text/javascript">
+    function onHomeyReady(Homey) {
+      const $ = (id) => document.getElementById(id);
+      const status = (msg) => { $('status').textContent = msg; };
+
+      Promise.all([
+        new Promise((r) => Homey.get('hostname', (e, v) => r(v || ''))),
+        new Promise((r) => Homey.get('username', (e, v) => r(v || ''))),
+        new Promise((r) => Homey.get('password', (e, v) => r(v || ''))),
+      ]).then(([h, u, p]) => {
+        $('hostname').value = h;
+        $('username').value = u;
+        $('password').value = p;
+      });
+
+      $('save').addEventListener('click', () => {
+        const hostname = $('hostname').value.trim();
+        const username = $('username').value.trim().toUpperCase();
+        const password = $('password').value;
+
+        if (!hostname || !username || !password) {
+          Homey.alert('All three fields are required.');
+          return;
+        }
+        if (!/^[0-9A-F]{12}$/.test(username)) {
+          Homey.alert('MAC must be 12 hex characters (no separators).');
+          return;
+        }
+
+        status('Saving…');
+        Homey.set('hostname', hostname, (e1) => {
+          if (e1) { Homey.alert(e1); return; }
+          Homey.set('username', username, (e2) => {
+            if (e2) { Homey.alert(e2); return; }
+            Homey.set('password', password, (e3) => {
+              if (e3) { Homey.alert(e3); return; }
+              status('Saved. Restart the app (Apps → Delta Dore Tydom → gear → Restart) to apply.');
+            });
+          });
+        });
+      });
+
+      Homey.ready();
+    }
+  </script>
+</body>
+</html>

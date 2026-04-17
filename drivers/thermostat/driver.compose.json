@@ -4,16 +4,55 @@
   },
   "class": "thermostat",
   "capabilities": [
-    "target_temperature",
     "measure_temperature",
-    "onoff"
+    "target_temperature",
+    "thermostat_mode",
+    "onoff",
+    "onoff.boost",
+    "alarm_battery",
+    "alarm_generic.production",
+    "alarm_generic.sensor"
   ],
+  "capabilitiesOptions": {
+    "measure_temperature": {
+      "title": { "en": "Temperature", "nl": "Temperatuur" },
+      "insights": true,
+      "preventInsights": false,
+      "units": { "en": "°C" }
+    },
+    "target_temperature": {
+      "title": { "en": "Setpoint", "nl": "Gewenste temperatuur" },
+      "insights": true,
+      "preventInsights": false,
+      "min": 10,
+      "max": 30,
+      "step": 0.5,
+      "units": { "en": "°C" }
+    },
+    "onoff.boost": {
+      "title": { "en": "Boost", "nl": "Boost" },
+      "insightsTitleTrue": { "en": "Boost turned on" },
+      "insightsTitleFalse": { "en": "Boost turned off" },
+      "uiComponent": "toggle",
+      "uiQuickAction": true,
+      "preventInsights": false
+    },
+    "alarm_generic.production": {
+      "title": { "en": "Production fault", "nl": "Productiestoring" }
+    },
+    "alarm_generic.sensor": {
+      "title": { "en": "Sensor fault", "nl": "Sensorstoring" }
+    }
+  },
   "platforms": [
     "local"
   ],
   "connectivity": [
     "lan"
   ],
+  "energy": {
+    "batteries": ["AAA", "AAA"]
+  },
   "images": {
     "small": "{{driverAssetsPath}}/images/small.png",
     "large": "{{driverAssetsPath}}/images/large.png",

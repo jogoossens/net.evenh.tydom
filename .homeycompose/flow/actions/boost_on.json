@@ -1,0 +1,22 @@
+{
+  "id": "boost_on",
+  "title": {
+    "en": "Turn boost on",
+    "nl": "Boost inschakelen"
+  },
+  "titleFormatted": {
+    "en": "Turn boost on",
+    "nl": "Boost inschakelen"
+  },
+  "hint": {
+    "en": "Forces the thermostat to run at max (setpoint 30°C for heating, 10°C for cooling) until boost is turned off. Uses the Tydom setpoint-derogation mechanism.",
+    "nl": "Laat de thermostaat op max draaien (setpoint 30°C voor verwarmen, 10°C voor koelen) tot boost uit wordt gezet. Gebruikt het Tydom setpoint-derogation mechanisme."
+  },
+  "args": [
+    {
+      "name": "device",
+      "type": "device",
+      "filter": "driver_id=thermostat"
+    }
+  ]
+}

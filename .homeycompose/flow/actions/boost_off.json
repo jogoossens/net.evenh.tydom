@@ -1,0 +1,22 @@
+{
+  "id": "boost_off",
+  "title": {
+    "en": "Turn boost off",
+    "nl": "Boost uitschakelen"
+  },
+  "titleFormatted": {
+    "en": "Turn boost off",
+    "nl": "Boost uitschakelen"
+  },
+  "hint": {
+    "en": "Cancels the thermostat boost (clears the setpoint derogation) so the normal schedule / setpoint resumes.",
+    "nl": "Annuleert de thermostaat boost zodat het normale schema / setpoint hervat wordt."
+  },
+  "args": [
+    {
+      "name": "device",
+      "type": "device",
+      "filter": "driver_id=thermostat"
+    }
+  ]
+}
