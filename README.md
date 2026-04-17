@@ -38,7 +38,7 @@ This is a **fork of [evenh/net.evenh.tydom](https://github.com/evenh/net.evenh.t
 There's no App Store build. Install via the Homey CLI from this repository:
 
 ```bash
-git clone https://github.com/<your-fork>/net.evenh.tydom.git
+git clone https://github.com/jogoossens/net.evenh.tydom.git
 cd net.evenh.tydom
 npm install
 homey app install
