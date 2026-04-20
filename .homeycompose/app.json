@@ -1,6 +1,6 @@
 {
-  "id": "net.evenh.tydom",
-  "version": "3.0.0",
+  "id": "com.jogoossens.tydom",
+  "version": "1.0.0",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "platforms": [
@@ -10,11 +10,12 @@
     "en": "Delta Dore Tydom"
   },
   "description": {
-    "en": "Adds support for the Delta Dore Tydom 1.0 smart hub."
+    "en": "Control Delta Dore Tydom devices from Homey."
   },
   "category": [
-    "appliances"
+    "climate"
   ],
+  "brandColor": "#A61D23",
   "permissions": [],
   "images": {
     "small": "/assets/images/small.png",
@@ -22,7 +23,16 @@
     "xlarge": "/assets/images/xlarge.png"
   },
   "author": {
-    "name": "Even Holthe",
-    "email": "even.holthe@me.com"
-  }
+    "name": "Jo Goossens"
+  },
+  "contributors": {
+    "developers": [
+      {
+        "name": "Even Holthe",
+        "email": "even.holthe@me.com"
+      }
+    ]
+  },
+  "source": "https://github.com/jogoossens/net.evenh.tydom",
+  "support": "https://github.com/jogoossens/net.evenh.tydom/issues"
 }

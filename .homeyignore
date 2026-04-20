@@ -1,0 +1,10 @@
+tydom-test/
+AGENTS.md
+credentials.txt
+.eslintrc.js
+prettier.config.js
+tsconfig.json
+.nvmrc
+.editorconfig
+.gitattributes
+README.md

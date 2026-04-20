@@ -1,5 +1,5 @@
 {
-  "name": "net.evenh.tydom",
+  "name": "com.jogoossens.tydom",
   "version": "1.0.0",
   "main": "app.ts",
   "scripts": {
