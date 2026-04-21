@@ -1,5 +1,8 @@
 {
   "1.0.0": {
     "en": "First public release. Pair Delta Dore Tydom thermostats and control temperature, mode, on/off and boost from Homey. Includes flow triggers for setpoint overshoot/undershoot and flow actions to start or stop boost."
+  },
+  "1.0.1": {
+    "en": "First public release. Pair Delta Dore Tydom thermostats and control them from Homey."
   }
 }
