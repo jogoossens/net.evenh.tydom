@@ -4,5 +4,8 @@
   },
   "1.0.1": {
     "en": "First public release. Pair Delta Dore Tydom thermostats and control them from Homey."
+  },
+  "1.0.2": {
+    "en": "Addresses Homey App Store review feedback: tagline-style description, dedicated app icon, simplified flow card titles."
   }
 }
