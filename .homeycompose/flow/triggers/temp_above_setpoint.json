@@ -5,8 +5,8 @@
     "nl": "Temperatuur is boven setpoint"
   },
   "titleFormatted": {
-    "en": "Temperature is !{{more than|at least}} [[delta]]°C above setpoint",
-    "nl": "Temperatuur is !{{meer dan|minstens}} [[delta]]°C boven setpoint"
+    "en": "Temperature is at least [[delta]]°C above setpoint",
+    "nl": "Temperatuur is minstens [[delta]]°C boven setpoint"
   },
   "hint": {
     "en": "Fires when the measured room temperature rises at or above (setpoint + delta). Evaluated on every temperature or setpoint update the thermostat reports.",
@@ -21,7 +21,7 @@
     {
       "name": "delta",
       "type": "number",
-      "title": { "en": "Delta (°C)", "nl": "Verschil (°C)" },
+      "title": { "en": "Delta", "nl": "Verschil" },
       "placeholder": { "en": "e.g. 2" },
       "min": 0.1,
       "max": 15,

@@ -21,7 +21,7 @@
     {
       "name": "tolerance",
       "type": "number",
-      "title": { "en": "Tolerance (°C)", "nl": "Tolerantie (°C)" },
+      "title": { "en": "Tolerance", "nl": "Tolerantie" },
       "placeholder": { "en": "e.g. 0.1" },
       "min": 0,
       "max": 5,

@@ -5,8 +5,8 @@
     "nl": "Kan setpoint niet bereiken (modus-afhankelijk)"
   },
   "titleFormatted": {
-    "en": "Cannot reach setpoint — off by !{{more than|at least}} [[delta]]°C in the wrong direction",
-    "nl": "Kan setpoint niet bereiken — !{{meer dan|minstens}} [[delta]]°C in de verkeerde richting"
+    "en": "Cannot reach setpoint — off by at least [[delta]]°C in the wrong direction",
+    "nl": "Kan setpoint niet bereiken — minstens [[delta]]°C in de verkeerde richting"
   },
   "hint": {
     "en": "MODE-AWARE. Fires when the room temperature is at least [delta]°C off the setpoint in the direction the HVAC is failing.\n\n• In HEATING mode: fires when the room is colder than (setpoint − delta).\n• In COOLING mode: fires when the room is warmer than (setpoint + delta).\n• In AUTO / OFF: does NOT fire (unclear which direction is 'wrong').\n\nTypical use: trigger 'Turn boost on' when the HVAC is falling behind, regardless of season.",
@@ -21,7 +21,7 @@
     {
       "name": "delta",
       "type": "number",
-      "title": { "en": "Shortfall (°C)", "nl": "Tekort (°C)" },
+      "title": { "en": "Shortfall", "nl": "Tekort" },
       "placeholder": { "en": "e.g. 1" },
       "min": 0.1,
       "max": 15,

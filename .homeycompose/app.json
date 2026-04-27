@@ -10,7 +10,7 @@
     "en": "Delta Dore Tydom"
   },
   "description": {
-    "en": "Control Delta Dore Tydom devices from Homey."
+    "en": "Native, local Tydom heating in your Homey flows."
   },
   "category": [
     "climate"

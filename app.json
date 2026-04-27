@@ -11,7 +11,7 @@
     "en": "Delta Dore Tydom"
   },
   "description": {
-    "en": "Control Delta Dore Tydom devices from Homey."
+    "en": "Native, local Tydom heating in your Homey flows."
   },
   "category": [
     "climate"
@@ -62,8 +62,8 @@
             "name": "tolerance",
             "type": "number",
             "title": {
-              "en": "Tolerance (°C)",
-              "nl": "Tolerantie (°C)"
+              "en": "Tolerance",
+              "nl": "Tolerantie"
             },
             "placeholder": {
               "en": "e.g. 0.1"
@@ -110,8 +110,8 @@
           "nl": "Kan setpoint niet bereiken (modus-afhankelijk)"
         },
         "titleFormatted": {
-          "en": "Cannot reach setpoint — off by !{{more than|at least}} [[delta]]°C in the wrong direction",
-          "nl": "Kan setpoint niet bereiken — !{{meer dan|minstens}} [[delta]]°C in de verkeerde richting"
+          "en": "Cannot reach setpoint — off by at least [[delta]]°C in the wrong direction",
+          "nl": "Kan setpoint niet bereiken — minstens [[delta]]°C in de verkeerde richting"
         },
         "hint": {
           "en": "MODE-AWARE. Fires when the room temperature is at least [delta]°C off the setpoint in the direction the HVAC is failing.\n\n• In HEATING mode: fires when the room is colder than (setpoint − delta).\n• In COOLING mode: fires when the room is warmer than (setpoint + delta).\n• In AUTO / OFF: does NOT fire (unclear which direction is 'wrong').\n\nTypical use: trigger 'Turn boost on' when the HVAC is falling behind, regardless of season.",
@@ -127,8 +127,8 @@
             "name": "delta",
             "type": "number",
             "title": {
-              "en": "Shortfall (°C)",
-              "nl": "Tekort (°C)"
+              "en": "Shortfall",
+              "nl": "Tekort"
             },
             "placeholder": {
               "en": "e.g. 1"
@@ -184,8 +184,8 @@
           "nl": "Temperatuur is boven setpoint"
         },
         "titleFormatted": {
-          "en": "Temperature is !{{more than|at least}} [[delta]]°C above setpoint",
-          "nl": "Temperatuur is !{{meer dan|minstens}} [[delta]]°C boven setpoint"
+          "en": "Temperature is at least [[delta]]°C above setpoint",
+          "nl": "Temperatuur is minstens [[delta]]°C boven setpoint"
         },
         "hint": {
           "en": "Fires when the measured room temperature rises at or above (setpoint + delta). Evaluated on every temperature or setpoint update the thermostat reports.",
@@ -201,8 +201,8 @@
             "name": "delta",
             "type": "number",
             "title": {
-              "en": "Delta (°C)",
-              "nl": "Verschil (°C)"
+              "en": "Delta",
+              "nl": "Verschil"
             },
             "placeholder": {
               "en": "e.g. 2"
@@ -249,8 +249,8 @@
           "nl": "Temperatuur is onder setpoint"
         },
         "titleFormatted": {
-          "en": "Temperature is !{{more than|at least}} [[delta]]°C below setpoint",
-          "nl": "Temperatuur is !{{meer dan|minstens}} [[delta]]°C onder setpoint"
+          "en": "Temperature is at least [[delta]]°C below setpoint",
+          "nl": "Temperatuur is minstens [[delta]]°C onder setpoint"
         },
         "hint": {
           "en": "Fires when the measured room temperature falls at or below (setpoint − delta). Evaluated on every temperature or setpoint update the thermostat reports.",
@@ -266,8 +266,8 @@
             "name": "delta",
             "type": "number",
             "title": {
-              "en": "Delta (°C)",
-              "nl": "Verschil (°C)"
+              "en": "Delta",
+              "nl": "Verschil"
             },
             "placeholder": {
               "en": "e.g. 2"
