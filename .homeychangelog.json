@@ -7,5 +7,8 @@
   },
   "1.0.2": {
     "en": "Addresses Homey App Store review feedback: tagline-style description, dedicated app icon, simplified flow card titles."
+  },
+  "1.0.3": {
+    "en": "Rewritten README that better explains what the app does and why it is useful in Homey flows."
   }
 }
