@@ -1,3 +1,3 @@
-Bring your Delta Dore Tydom gateway into Homey. Pair your wireless thermostats and control them locally, without the cloud. See the current and target temperature, change the mode, turn heating on or off, and run boost to quickly reach a comfortable temperature.
+Talk to your Delta Dore Tydom gateway directly on your home network and pull every paired thermostat into Homey — current temperature, setpoint, mode, on/off, diagnostics, the works. No cloud round-trip, no extra hardware.
 
-Keep your existing Tydom setup in place. This app talks directly to the gateway on your home network and mirrors the state of every paired thermostat into Homey, so you can build flows on top of what you already have.
+Then build flows the way only Homey lets you. Trigger a boost when a room can't catch up to its setpoint, end the boost the moment it does. React to battery and sensor faults. Mode-aware flow cards work the same in heating and cooling season. Your existing Tydom installation keeps running exactly as it did — Homey just becomes the cleverest control surface on top.
