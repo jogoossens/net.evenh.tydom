@@ -10,5 +10,8 @@
   },
   "1.0.3": {
     "en": "Rewritten README that better explains what the app does and why it is useful in Homey flows."
+  },
+  "1.0.4": {
+    "en": "Adds support for Delta Dore TYXIA dimmable light receivers paired with the Tydom gateway. The light driver was present in the upstream code but disabled for the initial App Store release. Note: TYXIA hardware was not available for testing in this fork; please report issues."
   }
 }
