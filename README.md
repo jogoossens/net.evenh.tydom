@@ -4,9 +4,9 @@
 >
 > **This repository is a confirmed-working integration of the Delta Dore Tydom 1.0 gateway (also sold as "Tydom Home", retail SKU 6700105, hardware reference 25170010) with [Homey Pro](https://homey.app/).**
 >
-> **Tested in production against real hardware** — thermostats pair, state reads, control writes, boost (setpoint derogation), alarms, mode changes all work on firmware 03.22.42.
+> **Tested in production against real hardware** — Tybox thermostats pair, state reads, control writes, boost (setpoint derogation), alarms, mode changes all work on firmware 03.22.42.
 >
-> **Scope note**: testing focused on **Tybox thermostats**. The lights driver is also implemented and compiles cleanly, but was not tested against real TYXIA lights in this verification. Thermostats are the primary, proven-working device class. Help extending the lights driver (or adding shutters, alarms, etc.) is welcome.
+> **Scope note**: production testing focused on **Tybox thermostats**. The TYXIA light driver is shipped and re-enabled from 1.0.4 onwards but was not validated against real TYXIA receivers in this fork — bug reports from TYXIA owners are very welcome. Shutters, alarms, plugs, and door sensors are not implemented yet.
 >
 > Not tested against Tydom 2.0 — that's a different, cloud-first product with a completely different API and this app will NOT work with it.
 
