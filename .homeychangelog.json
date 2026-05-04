@@ -16,5 +16,8 @@
   },
   "1.0.5": {
     "en": "Light driver now uses an official Delta Dore TYXIA product photo on the App Store page, matching the visual style of the Thermostat tile."
+  },
+  "1.0.6": {
+    "en": "Description and README updated to mention TYXIA light support alongside thermostats."
   }
 }
