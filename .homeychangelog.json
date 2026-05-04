@@ -13,5 +13,8 @@
   },
   "1.0.4": {
     "en": "Adds support for Delta Dore TYXIA dimmable light receivers paired with the Tydom gateway. The light driver was present in the upstream code but disabled for the initial App Store release. Note: TYXIA hardware was not available for testing in this fork; please report issues."
+  },
+  "1.0.5": {
+    "en": "Light driver now uses an official Delta Dore TYXIA product photo on the App Store page, matching the visual style of the Thermostat tile."
   }
 }
