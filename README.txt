@@ -1,6 +1,6 @@
-Connect your Delta Dore Tydom to Homey in under a minute. Works with Tydom 1.0, Tydom 2.0, Tydom Home and Tydom Pro gateways.
+Connect your Delta Dore Tydom to Homey. Works with Tydom 1.0, Tydom 2.0, Tydom Home and Tydom Pro gateways.
 
-Adding it couldn't be simpler: go to Devices, tap +, choose Delta Dore Tydom and pick Thermostat or Light. Homey finds your Tydom on your network by itself. Then briefly press the button on your Tydom, and that's it. No account, no IP address, no password hunting, no restart. Prefer to sign in? The email and password of your Tydom mobile app work too; they are used once and never stored.
+Setting it up is easy: go to Devices, tap +, choose Delta Dore Tydom and pick Thermostat or Light. Homey finds your Tydom on your network, and you connect it by briefly pressing the button on your Tydom. You can also sign in with your Tydom mobile app account instead; your password is only used for that and is not stored.
 
 Your Tybox thermostats and TYXIA wireless lights then appear in Homey: current temperature, setpoint, mode, on/off, dim level, battery and fault alarms. Everything runs locally on your home network, fast, private and independent of the cloud.
 

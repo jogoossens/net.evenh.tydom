@@ -2,7 +2,7 @@
 
 > # ✅ Works with every Tydom gateway — set up with one button press
 >
-> **Connect a Delta Dore Tydom 1.0, Tydom 2.0, Tydom Home or Tydom Pro to [Homey Pro](https://homey.app/).** Add a device, Homey finds your Tydom on the network by itself, briefly press the button on the Tydom — done. No account, no IP address, no sticker password needed.
+> **Connect a Delta Dore Tydom 1.0, Tydom 2.0, Tydom Home or Tydom Pro to [Homey Pro](https://homey.app/).** Add a device, Homey finds your Tydom on the network, and you connect it by briefly pressing the button on the Tydom (or by signing in with your Tydom app account).
 >
 > **Tested in production on a Tydom Home** (hardware ref 25170010, firmware 03.22.42) with Tybox thermostats: pairing, state reads, control writes, boost (setpoint derogation), alarms and mode changes all work. Tydom 1.0, 2.0 and Pro use the same local connection (confirmed by recorded traffic from those gateways) — reports from owners are very welcome.
 >
