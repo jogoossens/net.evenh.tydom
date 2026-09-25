@@ -1,12 +1,10 @@
 /* eslint-disable no-console */
-const { loadCreds } = require('./_common');
+const { loadCreds, loadDevice } = require('./_common');
 const { createClient } = require('../node_modules/tydom-client');
 
 const { hostname: HOST, username: USER, password: PASS } = loadCreds();
 
-// Bureau thermostat per earlier scan
-const DEVICE = Number(process.env.DEVICE || 1678803746);
-const ENDPOINT = Number(process.env.ENDPOINT || 1678803746);
+const { device: DEVICE, endpoint: ENDPOINT } = loadDevice();
 
 const DATA_URI = `/devices/${DEVICE}/endpoints/${ENDPOINT}/data`;
 

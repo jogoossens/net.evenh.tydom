@@ -2,9 +2,10 @@
 /**
  * Shared helpers for tydom-test scripts:
  *  - TLS legacy-renegotiation patch (required for Tydom 1.0)
- *  - Credential loading: hostname and MAC default to the author's gateway
- *    values. The password is NEVER hardcoded — provide it via env var
- *    TYDOM_PASS or via tydom-test/.env.json (gitignored).
+ *  - Credential loading from env vars TYDOM_HOST / TYDOM_USER / TYDOM_PASS
+ *    or tydom-test/.env.json (gitignored). Nothing is hardcoded.
+ *  - Device selection from env vars DEVICE / ENDPOINT (see test-connect.js
+ *    output for ids).
  *
  * Never commit a real password to a test script.
  */
@@ -24,9 +25,6 @@ tls.createSecureContext = (o = {}) =>
       (o.secureOptions || 0) | constants.SSL_OP_LEGACY_SERVER_CONNECT,
   });
 
-const DEFAULT_HOST = '192.168.1.11';
-const DEFAULT_USER = '001A2506DEB2';
-
 function loadCreds() {
   const envFile = path.join(__dirname, '.env.json');
   let fileCreds = {};
@@ -37,16 +35,29 @@ function loadCreds() {
       console.error(`Failed to parse ${envFile}:`, e.message);
     }
   }
-  const hostname = process.env.TYDOM_HOST || fileCreds.hostname || DEFAULT_HOST;
-  const username = process.env.TYDOM_USER || fileCreds.username || DEFAULT_USER;
+  const hostname = process.env.TYDOM_HOST || fileCreds.hostname;
+  const username = process.env.TYDOM_USER || fileCreds.username;
   const password = process.env.TYDOM_PASS || fileCreds.password;
-  if (!password) {
+  if (!hostname || !username || !password) {
     console.error(
-      'Missing Tydom password. Set TYDOM_PASS env var, or create tydom-test/.env.json with { "password": "..." }.',
+      'Missing Tydom credentials. Set TYDOM_HOST / TYDOM_USER / TYDOM_PASS env vars, or copy tydom-test/.env.example to tydom-test/.env.json and fill it in.',
     );
     process.exit(1);
   }
   return { hostname, username, password };
 }
 
-module.exports = { loadCreds };
+// Endpoint id defaults to the device id (true for Tybox thermostats).
+function loadDevice() {
+  const device = Number(process.env.DEVICE);
+  const endpoint = Number(process.env.ENDPOINT || process.env.DEVICE);
+  if (!device) {
+    console.error(
+      'Missing DEVICE env var — run test-connect.js to list device ids, then e.g. DEVICE=1234567890 node tydom-test/<script>.js',
+    );
+    process.exit(1);
+  }
+  return { device, endpoint };
+}
+
+module.exports = { loadCreds, loadDevice };

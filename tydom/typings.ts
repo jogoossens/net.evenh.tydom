@@ -217,6 +217,7 @@ export type TydomPlatformConfig = {
   hostname: string;
   username: string;
   password: string;
+  gatewayName?: string; // user-chosen label, e.g. "Holiday house"
   settings: Record<string, {name?: string; category?: Categories}>;
   debug?: boolean;
   includedDevices?: string[];

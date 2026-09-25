@@ -1,12 +1,10 @@
 /* eslint-disable no-console */
-const { loadCreds } = require('./_common');
+const { loadCreds, loadDevice } = require('./_common');
 const { createClient } = require('../node_modules/tydom-client');
 
 const { hostname: HOST, username: USER, password: PASS } = loadCreds();
 
-// Beneden (setpoint 20, temp 20.82, cooling). Least invasive test.
-const DEVICE = 1678115460;
-const ENDPOINT = 1678115460;
+const { device: DEVICE, endpoint: ENDPOINT } = loadDevice();
 const URI = `/devices/${DEVICE}/endpoints/${ENDPOINT}/data`;
 
 const pick = (arr, n) => (arr.find((i) => i.name === n) || {}).value;

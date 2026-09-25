@@ -3,9 +3,7 @@ import { Categories } from '../../tydom/typings';
 import TydomController from '../../tydom/controller';
 
 class LightDriver extends Homey.Driver {
-  private api!: TydomController;
   async onInit() {
-    this.api = await TydomController.getInstance();
     this.log('LightDriver has been initialized');
     return Promise.resolve();
   }
@@ -15,7 +13,9 @@ class LightDriver extends Homey.Driver {
    * This should return an array with the data of devices that are available for pairing.
    */
   async onPairListDevices() {
-    return this.api.getDevices(Categories.LIGHTBULB);
+    return TydomController.getInstances().flatMap((c) =>
+      c.getDevices(Categories.LIGHTBULB),
+    );
   }
 }
 

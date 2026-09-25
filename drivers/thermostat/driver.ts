@@ -3,11 +3,7 @@ import TydomController from '../../tydom/controller';
 import { Categories } from '../../tydom/typings';
 
 class ThermostatDriver extends Homey.Driver {
-  private api!: TydomController;
-
   async onInit() {
-    this.api = await TydomController.getInstance();
-
     // Filter flow runs by the user's configured delta. Our device.ts fires
     // these triggers with state.difference = absolute overshoot/undershoot in
     // °C. Return true when it meets or exceeds the user-configured threshold.
@@ -62,7 +58,9 @@ class ThermostatDriver extends Homey.Driver {
    * This should return an array with the data of devices that are available for pairing.
    */
   async onPairListDevices() {
-    return this.api.getDevices(Categories.THERMOSTAT);
+    return TydomController.getInstances().flatMap((c) =>
+      c.getDevices(Categories.THERMOSTAT),
+    );
   }
 }
 

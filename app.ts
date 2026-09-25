@@ -17,66 +17,88 @@ tls.createSecureContext = (options: tls.SecureContextOptions = {}) =>
       (options.secureOptions || 0) | constants.SSL_OP_LEGACY_SERVER_CONNECT,
   });
 
+interface GatewaySetting {
+  name?: string;
+  mac: string;
+  hostname: string;
+  password: string;
+}
+
 class TydomApp extends App {
-  private controller?: TydomController;
   private debug = false;
 
   async onInit() {
     this.log('Delta Dore Tydom 1.0 has been initialized');
 
-    // Non-secret defaults — override via Configure App in Homey settings.
-    const DEFAULT_HOSTNAME = '192.168.1.11';
-    const DEFAULT_USERNAME = '001A2506DEB2';
-
-    const hostname =
-      (this.homey.settings.get('hostname') as string) || DEFAULT_HOSTNAME;
-    const username =
-      (this.homey.settings.get('username') as string) || DEFAULT_USERNAME;
-    const password = (this.homey.settings.get('password') as string) || '';
-
-    if (!password) {
-      this.log(
-        'Tydom password missing — open the app Configure page in Homey, enter the gateway password, then restart the app.',
-      );
-      this.homey.settings.on('set', (key: string) => {
-        if (['hostname', 'username', 'password'].includes(key)) {
-          this.log(`Setting "${key}" changed — restart the app to apply.`);
-        }
-      });
-      return;
-    }
-
-    this.log(`Tydom using hostname=${hostname} username=${username}`);
-
-    const logger = new DefaultLogger(this.log, this.error, this.debug);
-
-    this.controller = TydomController.createInstance(logger, {
-      settings: {},
-      debug: this.debug,
-      username,
-      password,
-      hostname,
-    });
-
-    assert(this.controller);
-    try {
-      await this.controller.connect();
-      await this.controller.scan();
-      this.log('Tydom connected and scanned');
-    } catch (err) {
-      this.error('Tydom connect/scan failed:', err);
-    }
-
     this.homey.settings.on('set', (key: string) => {
-      if (['hostname', 'username', 'password'].includes(key)) {
+      if (key === 'gateways') {
         this.log(`Setting "${key}" changed — restart the app to apply.`);
       }
     });
+
+    const gateways = this.getGateways();
+    if (!gateways.length) {
+      this.log(
+        'No Tydom gateway configured — open the app Configure page in Homey, add a gateway, then restart the app.',
+      );
+      return;
+    }
+
+    const logger = new DefaultLogger(this.log, this.error, this.debug);
+
+    // Connect in parallel so one unreachable gateway doesn't block the others.
+    await Promise.all(
+      gateways.map(async ({ name, mac, hostname, password }) => {
+        this.log(`Tydom using hostname=${hostname} username=${mac}`);
+        const controller = TydomController.createInstance(logger, {
+          settings: {},
+          debug: this.debug,
+          username: mac,
+          password,
+          hostname,
+          gatewayName: name,
+        });
+        assert(controller);
+        try {
+          await controller.connect();
+          await controller.scan();
+          this.log(`Tydom ${mac} connected and scanned`);
+        } catch (err) {
+          this.error(`Tydom ${mac} connect/scan failed:`, err);
+        }
+      }),
+    );
+  }
+
+  // Installs before multi-gateway support stored one gateway in flat
+  // hostname/username/password keys; move it into the gateways list once.
+  private getGateways(): GatewaySetting[] {
+    const gateways = this.homey.settings.get('gateways') as
+      | GatewaySetting[]
+      | null;
+    if (gateways) return gateways;
+
+    const password = this.homey.settings.get('password') as string;
+    if (!password) return [];
+
+    const migrated = [
+      {
+        mac: (this.homey.settings.get('username') as string) || '',
+        hostname: (this.homey.settings.get('hostname') as string) || '',
+        password,
+      },
+    ];
+    this.homey.settings.set('gateways', migrated);
+    ['hostname', 'username', 'password'].forEach((key) =>
+      this.homey.settings.unset(key),
+    );
+    this.log('Migrated single-gateway settings to the gateways list');
+    return migrated;
   }
 
   async onUninit() {
     this.log('Stopping app');
-    if (this.controller) this.controller.disconnect();
+    TydomController.getInstances().forEach((c) => c.disconnect());
     return Promise.resolve();
   }
 }

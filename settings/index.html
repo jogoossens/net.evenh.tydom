@@ -3,78 +3,208 @@
 <head>
   <meta charset="utf-8" />
   <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
+  <style>
+    .gateway { border-top: 1px solid #ddd; padding-top: 0.75em; margin-top: 0.75em; }
+    .gateway-title { font-weight: bold; }
+    .found { display: block; margin: 0.4em 0; }
+  </style>
 </head>
 <body>
   <header class="homey-header">
     <h1 class="homey-title">Delta Dore Tydom</h1>
-    <p class="homey-subtitle">Enter your Tydom 1.0 gateway credentials.</p>
+    <p class="homey-subtitle">Connect one or more Tydom 1.0 gateways.</p>
   </header>
 
   <fieldset class="homey-form-fieldset">
-    <legend class="homey-form-legend">Gateway</legend>
+    <legend class="homey-form-legend">1. Import from your Delta Dore account</legend>
 
     <div class="homey-form-group">
-      <label class="homey-form-label" for="hostname">Hostname / IP</label>
-      <input class="homey-form-input" id="hostname" type="text" placeholder="192.168.1.11" />
-      <p class="homey-form-helper-text">Local IP address of your Tydom gateway.</p>
+      <label class="homey-form-label" for="cloud-email">Email</label>
+      <input class="homey-form-input" id="cloud-email" type="email" autocomplete="username" />
     </div>
 
     <div class="homey-form-group">
-      <label class="homey-form-label" for="username">MAC address (username)</label>
-      <input class="homey-form-input" id="username" type="text" placeholder="001A25XXXXXX" />
-      <p class="homey-form-helper-text">12 hex chars, uppercase, no separators — from the sticker on the back.</p>
+      <label class="homey-form-label" for="cloud-password">Password</label>
+      <input class="homey-form-input" id="cloud-password" type="password" autocomplete="current-password" />
+      <p class="homey-form-helper-text">The login you use in the Tydom mobile app. Used once to fetch your gateways, never stored.</p>
     </div>
 
-    <div class="homey-form-group">
-      <label class="homey-form-label" for="password">Password</label>
-      <input class="homey-form-input" id="password" type="password" placeholder="Sticker password" />
-      <p class="homey-form-helper-text">Gateway sticker password — not your Delta Dore account password.</p>
+    <div id="found" style="display: none;">
+      <p class="homey-form-label">Gateways on your account</p>
+      <div id="found-list"></div>
+      <button id="import" class="homey-button-secondary-full">Import selected</button>
     </div>
   </fieldset>
 
-  <button id="save" class="homey-button-primary-full">Save &amp; reconnect</button>
+  <button id="cloud-login" class="homey-button-primary-full">Find my gateways</button>
+
+  <p id="cloud-status" style="margin-top: 1em; color: #888;"></p>
+
+  <fieldset class="homey-form-fieldset">
+    <legend class="homey-form-legend">2. Gateways</legend>
+    <div id="gateways"></div>
+    <p id="no-gateways" class="homey-form-helper-text">No gateways yet — import them above or add one manually.</p>
+    <button id="add" class="homey-button-secondary-full">Add gateway manually</button>
+  </fieldset>
+
+  <button id="save" class="homey-button-primary-full">Save</button>
 
   <p id="status" style="margin-top: 1em; color: #888;"></p>
 
   <script type="text/javascript">
     function onHomeyReady(Homey) {
       const $ = (id) => document.getElementById(id);
-      const status = (msg) => { $('status').textContent = msg; };
+      let gateways = [];
+      let found = [];
 
-      Promise.all([
-        new Promise((r) => Homey.get('hostname', (e, v) => r(v || ''))),
-        new Promise((r) => Homey.get('username', (e, v) => r(v || ''))),
-        new Promise((r) => Homey.get('password', (e, v) => r(v || ''))),
-      ]).then(([h, u, p]) => {
-        $('hostname').value = h;
-        $('username').value = u;
-        $('password').value = p;
+      const input = (label, type, value, placeholder, onInput, helper) => {
+        const group = document.createElement('div');
+        group.className = 'homey-form-group';
+        const l = document.createElement('label');
+        l.className = 'homey-form-label';
+        l.textContent = label;
+        const i = document.createElement('input');
+        i.className = 'homey-form-input';
+        i.type = type;
+        i.value = value;
+        i.placeholder = placeholder;
+        i.addEventListener('input', () => onInput(i.value));
+        group.append(l, i);
+        if (helper) {
+          const h = document.createElement('p');
+          h.className = 'homey-form-helper-text';
+          h.textContent = helper;
+          group.append(h);
+        }
+        return group;
+      };
+
+      const render = () => {
+        const list = $('gateways');
+        list.innerHTML = '';
+        $('no-gateways').style.display = gateways.length ? 'none' : '';
+        gateways.forEach((gw, idx) => {
+          const row = document.createElement('div');
+          row.className = 'gateway';
+          const title = document.createElement('p');
+          title.className = 'gateway-title';
+          title.textContent = gw.name || gw.mac || 'New gateway';
+          row.append(
+            title,
+            input('Name', 'text', gw.name || '', 'e.g. Home, Holiday house', (v) => { gw.name = v.trim(); title.textContent = gw.name || gw.mac || 'New gateway'; },
+              'Shown after device names when you have several gateways, e.g. "Thermostat · Holiday house".'),
+            input('Hostname / IP', 'text', gw.hostname, '192.168.1.50', (v) => { gw.hostname = v.trim(); },
+              'Local IP of this gateway (router DHCP list, MAC prefix 00:1A:25).'),
+            input('MAC address', 'text', gw.mac, '001A25XXXXXX', (v) => { gw.mac = v.trim().toUpperCase(); title.textContent = gw.name || gw.mac || 'New gateway'; },
+              '12 hex chars, no separators — on the sticker.'),
+            input('Gateway password', 'password', gw.password, 'Sticker password', (v) => { gw.password = v; },
+              'Not your Delta Dore account password. Filled in by the import.'),
+          );
+          const remove = document.createElement('button');
+          remove.className = 'homey-button-transparent';
+          remove.textContent = 'Remove';
+          remove.addEventListener('click', () => { gateways.splice(idx, 1); render(); });
+          row.append(remove);
+          list.append(row);
+        });
+      };
+
+      Homey.get('gateways', (err, value) => {
+        gateways = Array.isArray(value) ? value : [];
+        render();
       });
 
-      $('save').addEventListener('click', () => {
-        const hostname = $('hostname').value.trim();
-        const username = $('username').value.trim().toUpperCase();
-        const password = $('password').value;
+      $('add').addEventListener('click', () => {
+        gateways.push({ name: '', mac: '', hostname: '', password: '' });
+        render();
+      });
 
-        if (!hostname || !username || !password) {
-          Homey.alert('All three fields are required.');
+      $('cloud-login').addEventListener('click', () => {
+        const email = $('cloud-email').value.trim();
+        const password = $('cloud-password').value;
+        if (!email || !password) {
+          Homey.alert('Enter your Delta Dore account email and password.');
           return;
         }
-        if (!/^[0-9A-F]{12}$/.test(username)) {
-          Homey.alert('MAC must be 12 hex characters (no separators).');
-          return;
-        }
 
-        status('Saving…');
-        Homey.set('hostname', hostname, (e1) => {
-          if (e1) { Homey.alert(e1); return; }
-          Homey.set('username', username, (e2) => {
-            if (e2) { Homey.alert(e2); return; }
-            Homey.set('password', password, (e3) => {
-              if (e3) { Homey.alert(e3); return; }
-              status('Saved. Restart the app (Apps → Delta Dore Tydom → gear → Restart) to apply.');
-            });
+        $('found').style.display = 'none';
+        $('cloud-status').textContent = 'Signing in to Delta Dore…';
+        Homey.api('POST', '/cloud-login', { email, password }, (err, result) => {
+          $('cloud-password').value = '';
+          if (err) {
+            $('cloud-status').textContent = '';
+            Homey.alert(err.message || String(err));
+            return;
+          }
+          found = result.gateways;
+          const list = $('found-list');
+          list.innerHTML = '';
+          found.forEach((gw, idx) => {
+            const known = gateways.some((g) => g.mac === gw.mac);
+            const label = document.createElement('label');
+            label.className = 'found';
+            const box = document.createElement('input');
+            box.type = 'checkbox';
+            box.checked = true;
+            box.dataset.idx = idx;
+            label.append(box, ` ${gw.mac}${known ? ' (already added — updates password)' : ''}`);
+            list.append(label);
           });
+          $('found').style.display = '';
+          $('cloud-status').textContent = `${found.length} gateway${found.length === 1 ? '' : 's'} found.`;
+        });
+      });
+
+      $('import').addEventListener('click', () => {
+        const picked = [...$('found-list').querySelectorAll('input:checked')].map((b) => found[b.dataset.idx]);
+        if (!picked.length) {
+          Homey.alert('Select at least one gateway.');
+          return;
+        }
+        picked.forEach((gw) => {
+          const existing = gateways.find((g) => g.mac === gw.mac);
+          if (existing) existing.password = gw.password;
+          else gateways.push({ name: '', mac: gw.mac, hostname: '', password: gw.password });
+        });
+        $('found').style.display = 'none';
+        render();
+        $('cloud-status').textContent = `Imported ${picked.length} gateway${picked.length === 1 ? '' : 's'} — enter the IP (and a name if you have several) of each below, then tap Save.`;
+      });
+
+      $('save').addEventListener('click', async () => {
+        const macs = new Set();
+        for (const gw of gateways) {
+          const name = gw.name || gw.mac || 'New gateway';
+          if (!/^[0-9A-F]{12}$/.test(gw.mac)) { Homey.alert(`${name}: MAC must be 12 hex characters (no separators).`); return; }
+          if (macs.has(gw.mac)) { Homey.alert(`${name} is listed twice.`); return; }
+          if (!gw.hostname) { Homey.alert(`${name}: enter its hostname / IP.`); return; }
+          if (!gw.password) { Homey.alert(`${name}: enter its gateway password.`); return; }
+          if (gateways.length > 1 && !gw.name) { Homey.alert(`${name}: give it a name (e.g. Home) so you can tell your gateways apart.`); return; }
+          macs.add(gw.mac);
+        }
+
+        // Test each gateway before saving; a busy gateway isn't necessarily
+        // misconfigured, so the user can still save on failure.
+        const failures = [];
+        for (const gw of gateways) {
+          const name = gw.name || gw.mac;
+          $('status').textContent = `Testing connection to ${name}…`;
+          const err = await new Promise((resolve) => {
+            Homey.api('POST', '/test-connection', { mac: gw.mac, hostname: gw.hostname, password: gw.password }, (e) => resolve(e));
+          });
+          if (err) failures.push(`${name}: ${err.message || err}`);
+        }
+        if (failures.length) {
+          const saveAnyway = await new Promise((resolve) => {
+            Homey.confirm(`Connection test failed:\n\n${failures.join('\n\n')}\n\nSave anyway?`, 'warning', (e, yes) => resolve(!e && yes));
+          });
+          if (!saveAnyway) { $('status').textContent = ''; return; }
+        }
+
+        $('status').textContent = 'Saving…';
+        Homey.set('gateways', gateways, (err) => {
+          if (err) { Homey.alert(err); return; }
+          $('status').textContent = `${failures.length ? 'Saved.' : 'Connection OK — saved.'} Restart the app (Apps → Delta Dore Tydom → gear → Restart) to apply.`;
         });
       });
 

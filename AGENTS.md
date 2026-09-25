@@ -6,13 +6,15 @@ Guidance for coding agents (and humans) working on this Homey app — a fork of 
 
 A Homey SDK v3 app that connects to a local Delta Dore Tydom 1.0 gateway over the LAN and exposes its **lights** and **thermostats** as Homey devices. It does not use the Delta Dore cloud — all control is local.
 
-Upstream project state: work-in-progress fork. Credentials are hardcoded in `app.ts` (there is no Homey settings page or pair-flow credential prompt). mDNS discovery is declared in `app.json` but not wired to any driver.
+The app is meant for many users: **nothing user-specific is hardcoded** — every gateway comes from the Configure App settings page. The Delta Dore cloud is used only there, once, to import gateway credentials. mDNS discovery is declared in `app.json` but not wired to any driver.
 
 ## Project layout
 
-- `app.ts` — entrypoint. Creates the `TydomController` singleton with hardcoded credentials and calls `connect()` + `scan()` on init.
-- `tydom/controller.ts` — singleton that wraps the `tydom-client` npm package. Connects to the gateway, scans devices, emits updates, and exposes `getDevices(category)` for pair flows.
+- `app.ts` — entrypoint. Reads the `gateways` setting, creates one `TydomController` per gateway and calls `connect()` + `scan()` on init.
+- `settings/index.html` — Configure App page: Delta Dore sign-in + import, per-gateway name / IP / MAC / password, connection test on Save.
+- `tydom/controller.ts` — one instance per gateway (keyed by MAC); wraps the `tydom-client` npm package. Connects to the gateway, scans devices, emits updates, and exposes `getDevices(category)` for pair flows.
 - `tydom/typings.ts` — Tydom API types + `Categories` enum (LIGHTBULB, THERMOSTAT, OTHER, …).
+- `tydom/cloud.ts` + `api.ts` — `POST /cloud-login` settings-page endpoint: signs in to the Delta Dore cloud (Azure B2C, see Option A below), lists the account's sites (`GET sitesmanagement/api/v2/sites`) and reads each gateway's MAC + password (`GET sitesmanagement/api/v1/sites/{id}`). The page imports the ones the user ticks. `POST /test-connection` checks each gateway on Save. Account password is never stored.
 - `tydom/helpers.ts` — endpoint→category resolution based on `first_usage` / metadata.
 - `drivers/light/` — `driver.ts` calls `controller.getDevices(Categories.LIGHTBULB)` on pair; `device.ts` maps `onoff` / `dim` to `updateLightLevel`.
 - `drivers/thermostat/` — same pattern for `target_temperature` / `measure_temperature` / `onoff`.
@@ -37,17 +39,7 @@ homey app run
 
 ## Configuring credentials
 
-Credentials live in `app.ts` around lines 29-31:
-
-```ts
-const hostname = '192.168.1.11';     // local IP of the Tydom gateway
-const username = '001A2506DEB2';      // Tydom MAC, uppercase, no separators
-const password = '<sticker password>'; // gateway sticker password (see below) — never commit
-```
-
-Note: `app.ts` ships with non-secret defaults for hostname and username but **no** password. The password must come from the Configure App page in Homey settings. Never commit the real password.
-
-After editing, `homey app install` to push.
+Homey → Apps → Delta Dore Tydom → Configure App. Sign in with the Delta Dore account to import gateways (MAC + password), enter each gateway's IP, Save (runs a connection test), restart the app. Stored in the `gateways` setting — never in code. Never commit real credentials, MACs, IPs or device ids; use placeholders like `001A25XXXXXX` / `192.168.1.50`.
 
 ### Finding the hostname
 
@@ -73,7 +65,7 @@ Delta Dore's cloud stores the password in clear text and returns it to authentic
 ```bash
 EMAIL="you@example.com"          # Delta Dore account email (Tydom mobile app login)
 PASS='your-account-password'     # Delta Dore account password — use single quotes for special chars
-MAC="001A2506DEB2"               # your gateway MAC
+MAC="001A25XXXXXX"               # your gateway MAC
 CID="8782839f-3264-472a-ab87-4d4e23524da4"
 SCOPE="openid profile offline_access https://deltadoreadb2ciot.onmicrosoft.com/iotapi/sites_management_gateway_credentials"
 
@@ -119,8 +111,10 @@ Supported device classes: **light** and **thermostat** only. Shutters, alarms, D
 - `app.ts` sets `NODE_TLS_REJECT_UNAUTHORIZED = '0'` globally — relaxed TLS is needed for the self-signed cert on the Tydom, but it disables TLS verification process-wide.
 - `app.ts` opens the Node inspector on `0.0.0.0:9229` and calls `waitForDebugger()` when `debug = true`. Set `this.debug = false` in production, or the app hangs waiting for a debugger to attach.
 - If `controller.connect()` throws in `onInit`, the app crashes — there's no retry loop.
-- `TydomController` is a singleton shared between drivers. Both drivers call `TydomController.getInstance()` in their `onInit`, which requires `app.ts` to have created the instance first.
+- Multi-gateway: settings key `gateways` is a list of `{mac, hostname, password}`; `app.ts` creates one `TydomController` per entry (keyed by MAC) and migrates old flat `hostname`/`username`/`password` keys on first start. Devices store `mac` in their data and call `TydomController.getInstance(mac)`; devices paired before this have no `mac` and fall back to the first gateway.
 - `app.json` is generated — edit `.homeycompose/app.json` instead.
+- Tydom 1.0 serves **one local connection at a time**: a second client gets no answer (the first is unaffected). The Tydom mobile app on the LAN, another Homey, or a `tydom-test/` script all compete for it. `POST /test-connection` therefore pings over the app's existing controller when the settings are unchanged.
+- A wrong gateway password gets either a `401` or silence, and the gateway can stay silent for ~a minute afterwards — wait before retrying when testing. The **username/MAC is not checked** locally (any value connects), so a passing connection test only proves IP + password.
 
 ## Past bugs fixed
 
@@ -132,8 +126,8 @@ Supported device classes: **light** and **thermostat** only. Shutters, alarms, D
 `tydom-test/test-connect.js` connects directly with the `tydom-client` package and dumps `/configs/file` + `/groups/file` + `/devices/meta`, bypassing Homey entirely. Use it to verify credentials, TLS, and that the gateway returns expected devices before debugging the Homey side.
 
 ```bash
-node tydom-test/test-connect.js                                    # uses hardcoded defaults
-TYDOM_HOST=... TYDOM_USER=... TYDOM_PASS=... node tydom-test/test-connect.js
+TYDOM_HOST=... TYDOM_USER=... TYDOM_PASS=... node tydom-test/test-connect.js   # or tydom-test/.env.json
+DEVICE=<deviceId> node tydom-test/test-boost.js                    # device-specific scripts take DEVICE (+ optional ENDPOINT)
 DEBUG='' node tydom-test/test-connect.js                           # silence tydom-client wire log
 ```
 

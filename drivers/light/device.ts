@@ -7,7 +7,7 @@ class Light extends Device {
   api!: TydomController;
 
   async onInit() {
-    this.api = await TydomController.getInstance();
+    this.api = await TydomController.getInstance(this.getData().mac);
 
     this.registerMultipleCapabilityListener(
       ['onoff', 'dim'],

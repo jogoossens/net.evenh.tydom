@@ -47,8 +47,10 @@ homey app install
 After install, open **Homey web → Apps → Delta Dore Tydom → Configure App** and fill in:
 
 - **Hostname / IP** — the local IP of the Tydom gateway (find it in your router DHCP table; MAC prefix `00:1A:25`)
-- **MAC address** — the 12-char hex string on the gateway sticker, uppercase, no separators (e.g. `001A2506DEB2`)
+- **MAC address** — the 12-char hex string on the gateway sticker, uppercase, no separators (e.g. `001A25XXXXXX`)
 - **Password** — the gateway sticker password (see below if missing)
+
+Easiest: enter your **Delta Dore account** email + password (the Tydom mobile app login) and tap **Find my gateways**, tick the gateways to import, fill in each gateway's IP and tap **Save** — MAC and gateway password are filled in for you. The account password is used once and not stored. Several gateways are supported; each gets its own entry.
 
 Then restart the app (gear icon → Restart).
 
@@ -121,7 +123,7 @@ Configure credentials **once**, one of two ways:
 
 ```bash
 # Option 1: environment variables
-export TYDOM_HOST=192.168.1.11
+export TYDOM_HOST=192.168.1.50
 export TYDOM_USER=001A25XXXXXX
 export TYDOM_PASS='your-sticker-password'
 
@@ -136,10 +138,12 @@ Then run any of:
 node tydom-test/test-connect.js       # connect, ping, list endpoints, observe push updates
 node tydom-test/test-device-data.js   # dump full data payload for every endpoint
 node tydom-test/test-full-scan.js     # probe hidden endpoints, dump meta/config/moments
-node tydom-test/test-boost.js         # test boost semantics on one thermostat
+DEVICE=<deviceId> node tydom-test/test-boost.js   # test boost semantics on one thermostat
 ```
 
-Silence the verbose `tydom-client` wire log by setting `DEBUG=` empty. The scripts never have passwords hardcoded; `TYDOM_HOST` and `TYDOM_USER` fall back to non-secret defaults for convenience.
+Device-specific scripts (`test-boost*.js`, `test-probe-hidden.js`, `test-restore-thermostat.js`) take the device id from `DEVICE` (and `ENDPOINT`, defaulting to the same id) — list ids with `test-connect.js`.
+
+Silence the verbose `tydom-client` wire log by setting `DEBUG=` empty. Nothing is hardcoded in the scripts — all credentials and device ids come from env vars or `.env.json`.
 
 ## Development
 

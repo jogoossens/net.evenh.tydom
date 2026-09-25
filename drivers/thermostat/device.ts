@@ -22,7 +22,7 @@ class Thermostat extends Device {
   private lastSetpoint: number | null = null;
 
   async onInit() {
-    this.api = await TydomController.getInstance();
+    this.api = await TydomController.getInstance(this.getData().mac);
 
     if (!this.hasCapability('thermostat_mode')) {
       await this.addCapability('thermostat_mode');

@@ -28,7 +28,8 @@ const DEFAULT_REFRESH_INTERVAL_SEC = 4 * 60 * 60; // 4 hours
 
 // TODO: Background sync, scan, refresh
 export default class TydomController extends EventEmitter {
-  private static instance: TydomController;
+  // One controller per gateway, keyed by gateway MAC (= Tydom username).
+  private static instances: Map<string, TydomController> = new Map();
 
   private log: Logger;
   private apiClient!: TydomClient;
@@ -86,17 +87,71 @@ export default class TydomController extends EventEmitter {
     log: Logger,
     config: TydomPlatformConfig,
   ): TydomController {
-    if (!TydomController.instance)
-      TydomController.instance = new TydomController(log, config);
+    let instance = TydomController.instances.get(config.username);
+    if (!instance) {
+      instance = new TydomController(log, config);
+      TydomController.instances.set(config.username, instance);
+    }
 
-    return TydomController.instance;
+    return instance;
   }
 
-  public static getInstance() {
-    if (!TydomController.instance)
-      return Promise.reject(new Error('no tydomController instance created'));
+  // Devices paired before multi-gateway support carry no mac in their data;
+  // they belong to the first (then only) configured gateway.
+  public static getInstance(mac?: string) {
+    const instance = mac
+      ? TydomController.instances.get(mac)
+      : TydomController.instances.values().next().value;
+    if (!instance)
+      return Promise.reject(
+        new Error(`no tydomController instance for gateway ${mac ?? ''}`),
+      );
 
-    return TydomController.instance;
+    return instance;
+  }
+
+  public static getInstances(): TydomController[] {
+    return [...TydomController.instances.values()];
+  }
+
+  // Connect + ping for the settings page. Tydom 1.0 answers only one local
+  // connection at a time, so a gateway this app is already connected to with
+  // the same settings is pinged over that connection instead of a new one.
+  public static async testConnection(
+    hostname: string,
+    username: string,
+    password: string,
+    timeoutMs = 10000,
+  ): Promise<void> {
+    const existing = TydomController.instances.get(username);
+    const reuse =
+      existing?.config.hostname === hostname &&
+      existing?.config.password === password;
+    const client = reuse
+      ? existing.apiClient
+      : createClient({ hostname, username, password });
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        (async () => {
+          if (!reuse) await client.connect();
+          await client.get('/ping');
+        })(),
+        new Promise((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error(`No answer from ${hostname}`)),
+            timeoutMs,
+          );
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+      try {
+        if (!reuse) client.close();
+      } catch {
+        // never connected
+      }
+    }
   }
 
   private static getUniqueId(deviceId: number, endpointId: number): string {
@@ -426,10 +481,16 @@ export default class TydomController extends EventEmitter {
   }
 
   public getDevices(category: Categories) {
+    // Tell same-named devices apart in the pair list when several gateways exist.
+    const suffix =
+      TydomController.instances.size > 1
+        ? ` · ${this.config.gatewayName || this.config.username}`
+        : '';
     return this.getDevicesForCategory(category).map((v) => ({
-      name: v?.name,
+      name: `${v?.name}${suffix}`,
       data: {
         id: v?.accessoryId,
+        mac: this.config.username,
         deviceId: v?.deviceId,
         endpointId: v?.endpointId,
       },

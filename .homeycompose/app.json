@@ -34,5 +34,15 @@
     ]
   },
   "source": "https://github.com/jogoossens/net.evenh.tydom",
-  "support": "https://github.com/jogoossens/net.evenh.tydom/issues"
+  "support": "https://github.com/jogoossens/net.evenh.tydom/issues",
+  "api": {
+    "cloudLogin": {
+      "method": "POST",
+      "path": "/cloud-login"
+    },
+    "testConnection": {
+      "method": "POST",
+      "path": "/test-connection"
+    }
+  }
 }

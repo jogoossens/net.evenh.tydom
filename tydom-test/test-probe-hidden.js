@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-const { loadCreds } = require('./_common');
+const { loadCreds, loadDevice } = require('./_common');
 const { createClient } = require('../node_modules/tydom-client');
 
 (async () => {
@@ -8,6 +8,7 @@ const { createClient } = require('../node_modules/tydom-client');
   await new Promise((r) => setTimeout(r, 300));
   await c.get('/ping');
 
+  const { device, endpoint } = loadDevice();
   const paths = [
     '/protocols',
     '/site',
@@ -44,10 +45,10 @@ const { createClient } = require('../node_modules/tydom-client');
     '/x3d/actors',
     '/x3d/pairing',
     // try per-device info endpoints beyond data
-    '/devices/1678115459',
-    '/devices/1678115459/endpoints/1678115459',
-    '/devices/1678115459/endpoints/1678115459/cdata',
-    '/devices/1678115459/init',
+    `/devices/${device}`,
+    `/devices/${device}/endpoints/${endpoint}`,
+    `/devices/${device}/endpoints/${endpoint}/cdata`,
+    `/devices/${device}/init`,
     // any hidden device lists
     '/receivers',
     '/actors',
