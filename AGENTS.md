@@ -102,7 +102,7 @@ Once the app is running with correct credentials:
 3. Homey calls `onPairListDevices` on the driver, which returns devices discovered during the `scan()` at app init
 4. Select and add
 
-If the list is empty: the connection probably failed. Check `homey app run` logs for digest auth errors (`401 Unauthorized` = wrong password or wrong MAC casing).
+If the list is empty: the connection probably failed. Check `homey app run` logs — `401 Unauthorized` (or no answer at all) usually means a wrong gateway password; the MAC isn't checked by the gateway. Also make sure no other client (e.g. the Tydom mobile app on the LAN) holds the gateway's single local connection.
 
 Supported device classes: **light** and **thermostat** only. Shutters, alarms, DIN modules, etc. are not implemented.
 
