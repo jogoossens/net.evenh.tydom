@@ -1,6 +1,7 @@
 import { App } from 'homey';
 import TydomController, { GatewayStatus } from './controller';
 import { fetchGateways } from './cloud';
+import { tryReadLocalPassword } from './local-pairing';
 import { Logger } from './util';
 
 type HomeyInstance = App['homey'];
@@ -20,6 +21,7 @@ export interface DiscoveredGateway {
 
 // MAC discovery for Delta Dore's OUI 00:1A:25, see .homeycompose/discovery.
 const STRATEGY_ID = 'tydom';
+const READY_TIMEOUT_MS = 25 * 1000;
 
 const normalizeMac = (mac: string) =>
   mac.replace(/[^0-9a-f]/gi, '').toUpperCase();
@@ -89,6 +91,17 @@ export default class Gateways {
       });
     this.save(gateways);
     return TydomController.find(mac)!;
+  }
+
+  // One button-pairing attempt; callers repeat it while the user presses the
+  // gateway's button. Resolves false while the pairing window is closed.
+  async pairWithButton(mac: string, hostname: string): Promise<boolean> {
+    const password = await tryReadLocalPassword(hostname, normalizeMac(mac));
+    if (!password) return false;
+    const controller = this.upsert({ mac, hostname, password });
+    if (!(await controller.waitUntilReady(READY_TIMEOUT_MS)))
+      throw new Error(controller.lastError || 'Could not connect to the gateway');
+    return true;
   }
 
   // Import the account's gateways. With `onlyOnThisNetwork`, gateways Homey

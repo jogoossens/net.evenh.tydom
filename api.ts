@@ -14,6 +14,14 @@ module.exports = {
     return { gateways: controllers.map((c) => c.config.username) };
   },
 
+  // One button-pairing attempt; the page repeats it while the user presses
+  // the gateway's button.
+  async buttonTry({ homey, body }: { homey: any; body: any }) {
+    const { mac, hostname } = body || {};
+    if (!mac || !hostname) throw new Error('MAC and IP address are required');
+    return { paired: await gatewaysOf(homey).pairWithButton(mac, hostname) };
+  },
+
   // Live connection state per gateway plus gateways found on the network.
   async status({ homey }: { homey: any }) {
     return gatewaysOf(homey).status();

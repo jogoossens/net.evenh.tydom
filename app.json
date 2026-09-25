@@ -41,6 +41,10 @@
       "method": "POST",
       "path": "/cloud-login"
     },
+    "buttonTry": {
+      "method": "POST",
+      "path": "/button-try"
+    },
     "status": {
       "method": "GET",
       "path": "/status"

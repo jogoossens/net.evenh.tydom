@@ -10,6 +10,9 @@
     .state-connected { color: #27ae60; }
     .state-error { color: #c0392b; }
     .state-connecting { color: #888; }
+    .warning { color: #c0392b; }
+    /* !important: Homey's settings stylesheet restyles every button. */
+    button.remove-button { width: 100% !important; margin-top: 0.4em !important; padding: 0.7em !important; border-radius: 8px !important; border: 1px solid #f1b0a8 !important; background: #fdecea !important; color: #c0392b !important; font-weight: 600 !important; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -21,13 +24,36 @@
   <fieldset class="homey-form-fieldset">
     <legend class="homey-form-legend">Gateways</legend>
     <div id="gateways"></div>
-    <p id="no-gateways" class="homey-form-helper-text">No gateways yet.</p>
+    <p id="no-gateways" class="homey-form-helper-text">No gateways yet — add one below.</p>
     <p id="discovered" class="homey-form-helper-text"></p>
-    <button id="add" class="homey-button-secondary-full">Add gateway manually</button>
   </fieldset>
 
-  <button id="save" class="homey-button-primary-full">Save</button>
+  <button id="save" class="homey-button-primary-full">Save changes</button>
   <p id="status" style="margin-top: 1em; color: #888;"></p>
+
+  <fieldset class="homey-form-fieldset">
+    <legend class="homey-form-legend">Add or re-connect a gateway with its button</legend>
+    <p id="btn-found" class="homey-form-helper-text">Looking for Tydom gateways on your network…</p>
+    <div class="homey-form-group" id="btn-pick-group" style="display: none;">
+      <label class="homey-form-label" for="btn-pick">Gateway</label>
+      <select class="homey-form-select" id="btn-pick"></select>
+    </div>
+    <div id="btn-manual" style="display: none;">
+      <div class="homey-form-group">
+        <label class="homey-form-label" for="btn-ip">IP address</label>
+        <input class="homey-form-input" id="btn-ip" type="text" placeholder="192.168.1.50" />
+      </div>
+      <div class="homey-form-group">
+        <label class="homey-form-label" for="btn-mac">MAC address</label>
+        <input class="homey-form-input" id="btn-mac" type="text" placeholder="001A25XXXXXX" />
+      </div>
+    </div>
+    <p>No account needed. Tap <b>Start</b>, then briefly press the button next to the power cable of your Tydom (about half a second).</p>
+    <p class="warning">Don't hold the button — holding it for 15 seconds resets the gateway.</p>
+  </fieldset>
+
+  <button id="btn-start" class="homey-button-primary-full">Start</button>
+  <p id="btn-status" style="margin-top: 1em; color: #888;"></p>
 
   <fieldset class="homey-form-fieldset">
     <legend class="homey-form-legend">Import from your Tydom app account</legend>
@@ -47,17 +73,54 @@
   <button id="cloud-login" class="homey-button-secondary-full">Import my gateways</button>
   <p id="cloud-status" style="margin-top: 1em; color: #888;"></p>
 
+  <fieldset class="homey-form-fieldset">
+    <legend class="homey-form-legend">Add a gateway manually</legend>
+    <p class="homey-form-helper-text">Only needed if the options above don't work, e.g. when your Tydom is on a different network than Homey.</p>
+    <div class="homey-form-group">
+      <label class="homey-form-label" for="man-ip">IP address</label>
+      <input class="homey-form-input" id="man-ip" type="text" placeholder="Leave empty to find it automatically" />
+    </div>
+    <div class="homey-form-group">
+      <label class="homey-form-label" for="man-mac">MAC address</label>
+      <input class="homey-form-input" id="man-mac" type="text" placeholder="001A25XXXXXX" />
+      <p class="homey-form-helper-text">12 characters, on the sticker.</p>
+    </div>
+    <div class="homey-form-group">
+      <label class="homey-form-label" for="man-password">Gateway password</label>
+      <input class="homey-form-input" id="man-password" type="password" placeholder="Sticker password" />
+      <p class="homey-form-helper-text">Printed on the sticker on the back of your Tydom. Not your Tydom app password.</p>
+    </div>
+  </fieldset>
+
+  <button id="man-add" class="homey-button-secondary-full">Add gateway</button>
+  <p id="man-status" style="margin-top: 1em; color: #888;"></p>
+
   <script type="text/javascript">
     function onHomeyReady(Homey) {
       const $ = (id) => document.getElementById(id);
       let gateways = [];
+      // Unsaved edits in the gateway list; Save only shows while there are some.
+      let dirty = false;
+      const setDirty = (value) => {
+        dirty = value;
+        $('save').style.display = dirty ? '' : 'none';
+      };
 
       const load = () => new Promise((resolve) => {
         Homey.get('gateways', (err, value) => {
           gateways = Array.isArray(value) ? value : [];
+          setDirty(false);
           render();
           resolve();
         });
+      });
+
+      // Pairing or another open settings page may change the list; reload so a
+      // stale copy here can't overwrite it.
+      Homey.on('settings.set', (key) => {
+        if (key !== 'gateways') return;
+        if (dirty) $('status').textContent = 'Your gateways were changed elsewhere — reloaded, unsaved edits were discarded.';
+        load().then(poll);
       });
 
       const input = (label, type, value, placeholder, onInput, helper) => {
@@ -71,7 +134,7 @@
         i.type = type;
         i.value = value;
         i.placeholder = placeholder;
-        i.addEventListener('input', () => onInput(i.value));
+        i.addEventListener('input', () => { onInput(i.value); setDirty(true); });
         group.append(l, i);
         if (helper) {
           const h = document.createElement('p');
@@ -107,9 +170,15 @@
           const password = input('Gateway password', 'password', gw.password, 'Sticker password', (v) => { gw.password = v; },
             'Filled in by the import or the button pairing. Not your Tydom app password.');
           const remove = document.createElement('button');
-          remove.className = 'homey-button-transparent';
-          remove.textContent = 'Remove';
-          remove.addEventListener('click', () => { gateways.splice(idx, 1); render(); });
+          remove.className = 'remove-button';
+          remove.textContent = 'Remove this gateway';
+          remove.addEventListener('click', () => {
+            Homey.confirm(`Remove ${title.textContent}? Its devices stay, but become unavailable until you add the gateway again.`, 'warning', (err, yes) => {
+              if (err || !yes) return;
+              gateways.splice(idx, 1);
+              persist($('status'), 'Removed.');
+            });
+          });
           row.append(title, status, name.group, ip.group, mac.group, password.group, remove);
           list.append(row);
         });
@@ -128,6 +197,10 @@
       };
       const poll = () => Homey.api('GET', '/status', null, (err, result) => {
         if (err || !result) return;
+        // Fallback for missed settings events: the app's list differs from ours.
+        const ours = gateways.map((g) => g.mac).sort().join();
+        const theirs = result.gateways.map((g) => g.mac).sort().join();
+        if (!dirty && ours !== theirs) { load().then(poll); return; }
         document.querySelectorAll('.gateway').forEach((row) => {
           const s = result.gateways.find((g) => g.mac === row.dataset.mac);
           const line = row.querySelector('.gateway-status');
@@ -141,38 +214,126 @@
             ip.value = s.hostname;
           }
         });
+        renderButtonTargets(result);
         const fresh = result.discovered.filter((d) => !d.configured);
         $('discovered').textContent = fresh.length
           ? `Found on your network and not set up yet: ${fresh.map((d) => `Tydom ${d.mac.slice(6)} (${d.address})`).join(', ')}. Add a device or import your account to connect it.`
           : '';
       });
 
+      // Gateways found on the network, for the button pairing. Only rebuilt
+      // when the list changes, so the user's selection survives polling.
+      let discovered = [];
+      let discoveredKey = null;
+      const renderButtonTargets = (result) => {
+        const key = result.discovered.map((d) => `${d.mac}@${d.address}`).join(',');
+        if (key === discoveredKey) return;
+        discoveredKey = key;
+        discovered = result.discovered;
+        const select = $('btn-pick');
+        const selected = select.value;
+        select.innerHTML = '';
+        discovered.forEach((d) => {
+          const gw = gateways.find((g) => g.mac === d.mac);
+          const label = `${gw && gw.name ? gw.name : `Tydom ${d.mac.slice(6)}`} (${d.address})${d.configured ? ' — already added, refreshes its password' : ''}`;
+          select.add(new Option(label, d.mac));
+        });
+        if (selected) select.value = selected;
+        $('btn-pick-group').style.display = discovered.length ? '' : 'none';
+        $('btn-manual').style.display = discovered.length ? 'none' : '';
+        $('btn-found').textContent = discovered.length
+          ? `Found ${discovered.length === 1 ? 'your Tydom' : `${discovered.length} Tydom gateways`} on your network.`
+          : "No Tydom found on your network — check it's powered on and on the same network as Homey, or enter its IP and MAC:";
+      };
+
+      const buttonTarget = () => {
+        if (discovered.length) {
+          const d = discovered.find((g) => g.mac === $('btn-pick').value) || discovered[0];
+          return { mac: d.mac, hostname: d.address };
+        }
+        const mac = $('btn-mac').value.replace(/[^0-9a-f]/gi, '').toUpperCase();
+        const hostname = $('btn-ip').value.trim();
+        if (!/^[0-9A-F]{12}$/.test(mac) || !hostname) {
+          Homey.alert('Enter the IP address and the 12-character MAC address of your Tydom first.');
+          return null;
+        }
+        return { mac, hostname };
+      };
+
+      const buttonTry = (target) => new Promise((resolve, reject) => {
+        Homey.api('POST', '/button-try', target, (err, result) => (err ? reject(err) : resolve(result)));
+      });
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+      let pressing = false;
+      $('btn-start').addEventListener('click', async () => {
+        const target = buttonTarget();
+        if (!target || pressing) return;
+        pressing = true;
+        $('btn-start').disabled = true;
+        const deadline = Date.now() + 90 * 1000;
+        try {
+          while (Date.now() < deadline) {
+            $('btn-status').textContent = `Now briefly press the button on your Tydom… (${Math.ceil((deadline - Date.now()) / 1000)}s)`;
+            const result = await buttonTry(target);
+            if (result && result.paired) {
+              $('btn-status').textContent = 'Connected! You can now add its devices: Devices → + → Delta Dore Tydom.';
+              await load();
+              poll();
+              return;
+            }
+            await sleep(1000);
+          }
+          $('btn-status').textContent = 'No button press detected. Tap Start and try again.';
+        } catch (err) {
+          $('btn-status').textContent = '';
+          Homey.alert(err.message || String(err));
+        } finally {
+          pressing = false;
+          $('btn-start').disabled = false;
+        }
+      });
+
       load().then(poll);
       setInterval(poll, 3000);
 
-      $('add').addEventListener('click', () => {
-        gateways.push({ name: '', mac: '', hostname: '', password: '' });
-        render();
-      });
-
-      $('save').addEventListener('click', () => {
+      // Validate and store the gateway list; changes apply immediately.
+      const persist = (statusLine, doneText) => {
         const macs = new Set();
         for (const gw of gateways) {
           const label = gw.name || gw.mac || 'New gateway';
-          if (!/^[0-9A-F]{12}$/.test(gw.mac)) { Homey.alert(`${label}: MAC must be 12 hex characters (no separators).`); return; }
-          if (macs.has(gw.mac)) { Homey.alert(`${label} is listed twice.`); return; }
-          if (!gw.password) { Homey.alert(`${label}: enter its gateway password.`); return; }
+          if (!/^[0-9A-F]{12}$/.test(gw.mac)) { Homey.alert(`${label}: MAC must be 12 hex characters (no separators).`); load(); return; }
+          if (macs.has(gw.mac)) { Homey.alert(`${label} is listed twice.`); load(); return; }
+          if (!gw.password) { Homey.alert(`${label}: enter its gateway password.`); load(); return; }
           macs.add(gw.mac);
         }
         // Several gateways need names to tell their devices apart.
         if (gateways.length > 1) gateways.forEach((gw, i) => { if (!gw.name) gw.name = `Tydom ${i + 1}`; });
 
-        $('status').textContent = 'Saving…';
+        statusLine.textContent = 'Saving…';
         Homey.set('gateways', gateways, (err) => {
           if (err) { Homey.alert(err); return; }
-          $('status').textContent = 'Saved — connecting, see the status of each gateway above.';
+          statusLine.textContent = doneText;
           load().then(poll);
         });
+      };
+
+      $('save').addEventListener('click', () => persist($('status'), 'Saved — connecting, see the status of each gateway above.'));
+
+      $('man-add').addEventListener('click', () => {
+        const mac = $('man-mac').value.replace(/[^0-9a-f]/gi, '').toUpperCase();
+        const password = $('man-password').value;
+        if (!/^[0-9A-F]{12}$/.test(mac)) { Homey.alert('Enter the 12-character MAC address from the sticker.'); return; }
+        if (!password) { Homey.alert('Enter the gateway password from the sticker.'); return; }
+        const existing = gateways.find((g) => g.mac === mac);
+        if (existing) {
+          existing.password = password;
+          if ($('man-ip').value.trim()) existing.hostname = $('man-ip').value.trim();
+        } else {
+          gateways.push({ name: '', mac, hostname: $('man-ip').value.trim(), password });
+        }
+        $('man-password').value = '';
+        persist($('man-status'), 'Added — connecting, see its status at the top of this page.');
       });
 
       $('cloud-login').addEventListener('click', () => {

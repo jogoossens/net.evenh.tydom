@@ -1,7 +1,6 @@
 import { Driver } from 'homey';
 import TydomController from './controller';
 import type Gateways from './gateways';
-import { tryReadLocalPassword } from './local-pairing';
 import { Categories } from './typings';
 
 const READY_TIMEOUT_MS = 25 * 1000;
@@ -33,12 +32,9 @@ export default function setupPairing(
   // One attempt; the view repeats it while the user presses the button.
   session.setHandler(
     'button_try',
-    async ({ mac, hostname }: { mac: string; hostname: string }) => {
-      const password = await tryReadLocalPassword(hostname, mac);
-      if (!password) return { paired: false };
-      await connectedController(gateways.upsert({ mac, hostname, password }));
-      return { paired: true };
-    },
+    async ({ mac, hostname }: { mac: string; hostname: string }) => ({
+      paired: await gateways.pairWithButton(mac, hostname),
+    }),
   );
 
   session.setHandler(
