@@ -1,0 +1,62 @@
+{
+  "type": "enum",
+  "title": {
+    "en": "Heating mode",
+    "nl": "Verwarmingsmodus"
+  },
+  "getable": true,
+  "setable": true,
+  "uiComponent": "picker",
+  "insights": false,
+  "values": [
+    {
+      "id": "comfort",
+      "title": {
+        "en": "Comfort",
+        "nl": "Comfort"
+      }
+    },
+    {
+      "id": "comfort_1",
+      "title": {
+        "en": "Comfort −1 °C",
+        "nl": "Comfort −1 °C"
+      }
+    },
+    {
+      "id": "comfort_2",
+      "title": {
+        "en": "Comfort −2 °C",
+        "nl": "Comfort −2 °C"
+      }
+    },
+    {
+      "id": "eco",
+      "title": {
+        "en": "Eco",
+        "nl": "Eco"
+      }
+    },
+    {
+      "id": "frost",
+      "title": {
+        "en": "Frost protection",
+        "nl": "Vorstbeveiliging"
+      }
+    },
+    {
+      "id": "off",
+      "title": {
+        "en": "Off",
+        "nl": "Uit"
+      }
+    },
+    {
+      "id": "auto",
+      "title": {
+        "en": "Auto (schedule)",
+        "nl": "Auto (programma)"
+      }
+    }
+  ]
+}

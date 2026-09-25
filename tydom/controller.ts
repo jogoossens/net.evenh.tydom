@@ -38,6 +38,9 @@ export interface GatewayStatus {
   error?: string;
   thermostats: number;
   lights: number;
+  shutters: number;
+  sensors: number;
+  heaters: number;
 }
 
 const UNREACHABLE = [
@@ -314,6 +317,13 @@ export default class TydomController extends EventEmitter {
       error: this.lastError,
       thermostats: count(Categories.THERMOSTAT),
       lights: count(Categories.LIGHTBULB),
+      shutters: count(Categories.WINDOW_COVERING),
+      sensors:
+        count(Categories.DOOR) +
+        count(Categories.WINDOW) +
+        count(Categories.SMOKE_SENSOR) +
+        count(Categories.TEMPERATURE_SENSOR),
+      heaters: count(Categories.PILOT_WIRE_HEATER),
     };
   }
 
@@ -520,6 +530,17 @@ export default class TydomController extends EventEmitter {
     return items.map((id) => this.devices.get(id));
   }
 
+  public async putData(
+    deviceId: number,
+    endpointId: number,
+    name: string,
+    value: unknown,
+  ) {
+    await this.client.put(`/devices/${deviceId}/endpoints/${endpointId}/data`, [
+      { name, value },
+    ]);
+  }
+
   public async updateLightLevel(
     deviceId: string,
     endpointId: string,
@@ -626,6 +647,16 @@ export default class TydomController extends EventEmitter {
         deviceId: v?.deviceId,
         endpointId: v?.endpointId,
       },
+      // On/off-only light receivers (e.g. TYXIA 4910) report level in steps
+      // of 100.
+      store:
+        category === Categories.LIGHTBULB
+          ? {
+              dimmable: !(
+                (v?.metadata.find((m) => m.name === 'level')?.step ?? 1) >= 100
+              ),
+            }
+          : {},
     }));
   }
 

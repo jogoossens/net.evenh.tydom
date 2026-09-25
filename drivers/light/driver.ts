@@ -9,7 +9,7 @@ class LightDriver extends Homey.Driver {
   }
 
   onPair(session: Parameters<NonNullable<Homey.Driver['onPair']>>[0]) {
-    setupPairing(this, session, Categories.LIGHTBULB);
+    setupPairing(this, session, [Categories.LIGHTBULB]);
   }
 }
 

@@ -18,7 +18,7 @@ const connectedController = async (controller: TydomController) => {
 export default function setupPairing(
   driver: Driver,
   session: PairSession,
-  category: Categories,
+  categories: Categories[],
 ) {
   const { gateways } = driver.homey.app as unknown as { gateways: Gateways };
 
@@ -72,6 +72,6 @@ export default function setupPairing(
         controllers.map((c) => c.lastError).find(Boolean) ||
           'Could not connect to your Tydom gateway',
       );
-    return ready.flatMap((c) => c.getDevices(category));
+    return ready.flatMap((c) => categories.flatMap((cat) => c.getDevices(cat)));
   });
 }

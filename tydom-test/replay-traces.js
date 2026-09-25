@@ -10,7 +10,8 @@
  *   npm run build
  *   node tydom-test/replay-traces.js /tmp/ha/tools
  *
- * Prints, per first_usage → last_usage, the category our resolver picks.
+ * Prints, per first_usage → last_usage, the category our resolver picks, and
+ * the Homey values the beta drivers' mappings produce from recorded data.
  */
 // One escaped HTTP message per line → { product, config, meta, data } snapshots.
 const fs = require('fs');
@@ -42,20 +43,41 @@ function load(path) {
 }
 
 const { resolveEndpointCategory } = require('../.homeybuild/tydom/helpers');
+const mappings = require('../.homeybuild/tydom/mappings');
 
-const CATEGORY_NAMES = { 1: 'OTHER', 4: 'GARAGE_DOOR_OPENER', 5: 'LIGHTBULB', 7: 'OUTLET', 9: 'THERMOSTAT', 10: 'SENSOR', 11: 'ALARM_SYSTEM', 12: 'DOOR', 13: 'WINDOW', 14: 'WINDOW_COVERING' };
+const CATEGORY_NAMES = { 100: 'SMOKE_SENSOR', 101: 'TEMPERATURE_SENSOR', 102: 'PILOT_WIRE_HEATER', 1: 'OTHER', 4: 'GARAGE_DOOR_OPENER', 5: 'LIGHTBULB', 7: 'OUTLET', 9: 'THERMOSTAT', 10: 'SENSOR', 11: 'ALARM_SYSTEM', 12: 'DOOR', 13: 'WINDOW', 14: 'WINDOW_COVERING' };
 
 const dir = process.argv[2];
 if (!dir) {
   console.error('Usage: node tydom-test/replay-traces.js <path to hass-deltadore-tydom-component/tools>');
   process.exit(1);
 }
+// Homey values a beta driver would show, from an endpoint's recorded values.
+const MAPPED = {
+  14: (v) => ({ windowcoverings_set: mappings.shutterPosition(v) }),
+  12: (v) => ({ alarm_contact: mappings.contactOpen(v), alarm_battery: mappings.batteryAlarm(v) }),
+  13: (v) => ({ alarm_contact: mappings.contactOpen(v), alarm_battery: mappings.batteryAlarm(v) }),
+  100: (v) => ({ alarm_smoke: mappings.smokeDetected(v), alarm_battery: mappings.batteryAlarm(v) }),
+  101: (v) => ({ measure_temperature: mappings.outdoorTemperature(v), alarm_battery: mappings.batteryAlarm(v) }),
+  102: (v) => ({ pilot_wire_mode: mappings.pilotWireMode(v), thermicLevel: v.thermicLevel }),
+};
+const samples = new Map();
+
 const rows = new Map();
 const seen = new Set();
 for (const file of fs.readdirSync(dir).filter((f) => f.startsWith('traces'))) {
   for (const snap of load(`${dir}/${file}`)) {
     const meta = new Map();
     for (const d of snap.meta || []) for (const ep of d.endpoints || []) meta.set(`${d.id}:${ep.id}`, ep.metadata || []);
+    const values = new Map();
+    for (const update of snap.data)
+      for (const d of Array.isArray(update) ? update : [])
+        for (const e of d.endpoints || [])
+          for (const x of e.data || []) {
+            if (x.validity === 'expired') continue;
+            const key = `${d.id}:${e.id}`;
+            values.set(key, { ...(values.get(key) || {}), [x.name]: x.value });
+          }
     for (const ep of snap.config.endpoints || []) {
       const id = `${snap.product}|${ep.id_device}:${ep.id_endpoint}`;
       const metadata = meta.get(`${ep.id_device}:${ep.id_endpoint}`);
@@ -67,7 +89,17 @@ for (const file of fs.readdirSync(dir).filter((f) => f.startsWith('traces'))) {
       row.count += 1;
       row.gateways.add(snap.product);
       rows.set(key, row);
+      const recorded = values.get(`${ep.id_device}:${ep.id_endpoint}`);
+      if (MAPPED[category] && recorded) {
+        const list = samples.get(category) || [];
+        if (list.length < 6) list.push(`${snap.product.padEnd(11)} ${JSON.stringify(MAPPED[category](recorded))}`);
+        samples.set(category, list);
+      }
     }
   }
 }
 for (const [key, row] of [...rows].sort()) console.log(`${key.padEnd(60)} x${row.count}  ${[...row.gateways].join('/')}`);
+for (const [category, list] of samples) {
+  console.log(`\n${CATEGORY_NAMES[category]} — Homey values from recorded data:`);
+  list.forEach((line) => console.log(`  ${line}`));
+}

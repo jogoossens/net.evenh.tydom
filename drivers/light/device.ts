@@ -12,9 +12,13 @@ class Light extends Device {
   }
 
   async onInit() {
+    // On/off-only receivers; lights paired before this have no flag and keep dim.
+    if (this.getStoreValue('dimmable') === false && this.hasCapability('dim')) {
+      await this.removeCapability('dim');
+    }
 
     this.registerMultipleCapabilityListener(
-      ['onoff', 'dim'],
+      ['onoff', 'dim'].filter((c) => this.hasCapability(c)),
       async ({ onoff, dim }) => {
         if (dim === undefined && onoff === false) {
           await this.setLevel(0.0);
@@ -81,6 +85,7 @@ class Light extends Device {
     await this.setCapabilityValue('onoff', isOn).catch((err) =>
       this.error(err),
     );
+    if (!this.hasCapability('dim')) return;
     await this.setCapabilityValue('dim', dimValue).catch((err) =>
       this.error(err),
     );

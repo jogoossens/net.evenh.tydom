@@ -54,7 +54,7 @@ class ThermostatDriver extends Homey.Driver {
   }
 
   onPair(session: Parameters<NonNullable<Homey.Driver['onPair']>>[0]) {
-    setupPairing(this, session, Categories.THERMOSTAT);
+    setupPairing(this, session, [Categories.THERMOSTAT]);
   }
 }
 

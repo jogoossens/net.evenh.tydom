@@ -270,4 +270,8 @@ export const enum Categories {
   AUDIO_RECEIVER = 34,
   TV_SET_TOP_BOX = 35,
   TV_STREAMING_STICK = 36,
+  // Not HomeKit categories: Tydom device types without a HomeKit equivalent.
+  SMOKE_SENSOR = 100,
+  TEMPERATURE_SENSOR = 101,
+  PILOT_WIRE_HEATER = 102,
 }

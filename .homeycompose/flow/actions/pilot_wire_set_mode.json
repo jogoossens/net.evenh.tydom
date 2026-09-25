@@ -1,0 +1,73 @@
+{
+  "id": "pilot_wire_set_mode",
+  "title": {
+    "en": "Set heating mode",
+    "nl": "Verwarmingsmodus instellen"
+  },
+  "titleFormatted": {
+    "en": "Set heating mode to [[mode]]",
+    "nl": "Verwarmingsmodus instellen op [[mode]]"
+  },
+  "args": [
+    {
+      "name": "device",
+      "type": "device",
+      "filter": "driver_id=heater"
+    },
+    {
+      "name": "mode",
+      "type": "dropdown",
+      "values": [
+        {
+          "id": "comfort",
+          "label": {
+            "en": "Comfort",
+            "nl": "Comfort"
+          }
+        },
+        {
+          "id": "comfort_1",
+          "label": {
+            "en": "Comfort −1 °C",
+            "nl": "Comfort −1 °C"
+          }
+        },
+        {
+          "id": "comfort_2",
+          "label": {
+            "en": "Comfort −2 °C",
+            "nl": "Comfort −2 °C"
+          }
+        },
+        {
+          "id": "eco",
+          "label": {
+            "en": "Eco",
+            "nl": "Eco"
+          }
+        },
+        {
+          "id": "frost",
+          "label": {
+            "en": "Frost protection",
+            "nl": "Vorstbeveiliging"
+          }
+        },
+        {
+          "id": "off",
+          "label": {
+            "en": "Off",
+            "nl": "Uit"
+          }
+        },
+        {
+          "id": "auto",
+          "label": {
+            "en": "Auto (schedule)",
+            "nl": "Auto (programma)"
+          }
+        }
+      ]
+    }
+  ]
+}

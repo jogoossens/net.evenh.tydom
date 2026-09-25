@@ -1,0 +1,158 @@
+<!-- Shared pair view: keep drivers/*/pair/start.html identical. -->
+<style>
+  .tydom-option { border-top: 1px solid rgba(128, 128, 128, 0.3); padding: 1em 0; }
+  .tydom-option h2 { font-size: 1.05em; margin: 0 0 0.3em; }
+  .tydom-option p { margin: 0 0 0.8em; }
+  .tydom-status { min-height: 1.4em; margin-top: 0.6em; }
+  .tydom-warning { color: #c0392b; }
+  #tydom-found { font-weight: bold; }
+</style>
+
+<header class="homey-header">
+  <h1 class="homey-title">Connect your Tydom</h1>
+  <p class="homey-subtitle" id="tydom-found">Looking for your Tydom on your network…</p>
+</header>
+
+<div id="tydom-pick" style="display: none;">
+  <label class="homey-form-label" for="tydom-gateway">Gateway</label>
+  <select class="homey-form-select" id="tydom-gateway"></select>
+</div>
+
+<div id="tydom-address" style="display: none;">
+  <p>Your Tydom wasn't found automatically. Check it's powered on and connected to the same network as Homey, or enter its details (router DHCP list, MAC on the sticker):</p>
+  <div class="homey-form-group">
+    <label class="homey-form-label" for="tydom-ip">IP address</label>
+    <input class="homey-form-input" id="tydom-ip" type="text" placeholder="192.168.1.50" />
+  </div>
+  <div class="homey-form-group">
+    <label class="homey-form-label" for="tydom-mac">MAC address</label>
+    <input class="homey-form-input" id="tydom-mac" type="text" placeholder="001A25XXXXXX" />
+  </div>
+</div>
+
+<div class="tydom-option">
+  <h2>Press the button on your Tydom</h2>
+  <p>No account needed. Tap <b>Start</b>, then briefly press the button next to the power cable of your Tydom (about half a second).</p>
+  <p class="tydom-warning">Don't hold the button — holding it for 15 seconds resets the gateway.</p>
+  <button class="homey-button-primary-full" id="tydom-button">Start</button>
+  <p class="tydom-status" id="tydom-button-status"></p>
+</div>
+
+<div class="tydom-option">
+  <h2>Sign in with your Tydom app account</h2>
+  <p>The email and password you use in the Tydom mobile app. Used once to fetch your gateway's password, never stored.</p>
+  <button class="homey-button-secondary-full" id="tydom-login">Sign in</button>
+</div>
+
+<div class="tydom-option">
+  <h2>Use the password from the sticker</h2>
+  <div class="homey-form-group">
+    <input class="homey-form-input" id="tydom-password" type="password" placeholder="Password on the back of your Tydom" />
+  </div>
+  <button class="homey-button-secondary-full" id="tydom-manual">Connect</button>
+</div>
+
+<script type="text/javascript">
+  (function () {
+    const $ = (id) => document.getElementById(id);
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const message = (err) => (err && err.message) || String(err);
+    let discovered = [];
+
+    // The gateway to connect: picked from discovery, or typed in.
+    const target = () => {
+      if (discovered.length) {
+        const gw = discovered.find((d) => d.mac === $('tydom-gateway').value) || discovered[0];
+        return { mac: gw.mac, hostname: gw.address };
+      }
+      const mac = $('tydom-mac').value.replace(/[^0-9a-f]/gi, '').toUpperCase();
+      const hostname = $('tydom-ip').value.trim();
+      if (!/^[0-9A-F]{12}$/.test(mac) || !hostname) {
+        Homey.alert('Enter the IP address and the 12-character MAC address of your Tydom first.');
+        return null;
+      }
+      return { mac, hostname };
+    };
+
+    const render = (status) => {
+      // Prefer gateways not set up yet; fall back to all (e.g. to re-connect).
+      const fresh = status.discovered.filter((d) => !d.configured);
+      discovered = fresh.length ? fresh : status.discovered;
+      const select = $('tydom-gateway');
+      select.innerHTML = '';
+      discovered.forEach((d) => select.add(new Option(`Tydom ${d.mac.slice(6)} (${d.address})`, d.mac)));
+      $('tydom-pick').style.display = discovered.length > 1 ? '' : 'none';
+      $('tydom-address').style.display = discovered.length ? 'none' : '';
+      const broken = status.gateways.find((g) => g.state === 'error');
+      $('tydom-found').textContent = discovered.length === 1
+        ? `Found your Tydom on your network (${discovered[0].address}).`
+        : discovered.length > 1
+          ? `Found ${discovered.length} Tydom gateways on your network.`
+          : broken ? broken.error : 'No Tydom found on your network yet.';
+    };
+
+    // Discovery can take a few seconds after the app starts.
+    (async () => {
+      for (let i = 0; i < 10; i++) {
+        try {
+          const status = await Homey.emit('status');
+          render(status);
+          if (status.discovered.length) return;
+        } catch (err) {
+          $('tydom-found').textContent = message(err);
+        }
+        await sleep(3000);
+      }
+    })();
+
+    let pressing = false;
+    $('tydom-button').addEventListener('click', async () => {
+      const gw = target();
+      if (!gw || pressing) return;
+      pressing = true;
+      $('tydom-button').disabled = true;
+      const deadline = Date.now() + 90 * 1000;
+      try {
+        while (Date.now() < deadline) {
+          const left = Math.ceil((deadline - Date.now()) / 1000);
+          $('tydom-button-status').textContent = `Now briefly press the button on your Tydom… (${left}s)`;
+          const result = await Homey.emit('button_try', gw);
+          if (result && result.paired) {
+            $('tydom-button-status').textContent = 'Connected!';
+            Homey.showView('list_devices');
+            return;
+          }
+          await sleep(1000);
+        }
+        $('tydom-button-status').textContent = 'No button press detected. Tap Start and try again.';
+      } catch (err) {
+        $('tydom-button-status').textContent = '';
+        Homey.alert(message(err));
+      } finally {
+        pressing = false;
+        $('tydom-button').disabled = false;
+      }
+    });
+
+    $('tydom-login').addEventListener('click', () => Homey.showView('login_credentials'));
+
+    $('tydom-manual').addEventListener('click', async () => {
+      const gw = target();
+      const password = $('tydom-password').value;
+      if (!gw) return;
+      if (!password) {
+        Homey.alert('Enter the password from the sticker on your Tydom.');
+        return;
+      }
+      Homey.showLoadingOverlay();
+      try {
+        await Homey.emit('manual', { ...gw, password });
+        Homey.showView('list_devices');
+      } catch (err) {
+        Homey.alert(message(err));
+      } finally {
+        Homey.hideLoadingOverlay();
+      }
+    });
+  })();
+</script>

@@ -197,22 +197,27 @@ type ResolveEndpointCategoryOptions = {
   settings: Record<string, unknown>;
 };
 
-// Pilot-wire heating zones (e.g. RF 6600 FP) share first_usage "hvac" with
-// real thermostats but have no setpoint — only a thermicLevel order — so the
-// thermostat driver can't drive them. Same rule as the Home Assistant Tydom
-// integration.
-const hasSetpoint = (metadata: TydomMetaElement[]) =>
-  metadata.some((m) =>
-    ['setpoint', 'heatSetpoint', 'coolSetpoint'].includes(m.name),
-  );
+const hasField = (metadata: TydomMetaElement[], ...names: string[]) =>
+  metadata.some((m) => names.includes(m.name));
 
+// Refines the (homebridge-derived) category with rules from the Home
+// Assistant Tydom integration, checked against its recorded gateway traffic
+// (tydom-test/replay-traces.js).
 export const resolveEndpointCategory = (
   options: ResolveEndpointCategoryOptions,
 ): Categories | null => {
+  const { firstUsage, metadata } = options;
   const category = resolveCategory(options);
-  if (category === Categories.THERMOSTAT && !hasSetpoint(options.metadata)) {
-    debug(`Skipping hvac endpoint without setpoint (pilot-wire zone?)`);
-    return null;
+  if (category === Categories.THERMOSTAT && !hasField(metadata, 'setpoint', 'heatSetpoint', 'coolSetpoint')) {
+    // Pilot-wire zones (e.g. RF 6600 FP) share first_usage "hvac" with real
+    // thermostats but only carry a thermicLevel order, no setpoint.
+    return hasField(metadata, 'thermicLevel') ? Categories.PILOT_WIRE_HEATER : null;
+  }
+  // Awnings report position inverted; no driver (or recordings) for them yet.
+  if (firstUsage === 'awning') return null;
+  if (firstUsage === 'sensor' && category === null) {
+    if (hasField(metadata, 'techSmokeDefect')) return Categories.SMOKE_SENSOR;
+    if (hasField(metadata, 'outTemperature')) return Categories.TEMPERATURE_SENSOR;
   }
   return category;
 };

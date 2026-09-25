@@ -187,9 +187,14 @@
       // Live status; only touches status lines and empty IP fields so edits survive.
       const describe = (s) => {
         if (s.state === 'connected') {
-          const parts = [];
-          if (s.thermostats) parts.push(`${s.thermostats} thermostat${s.thermostats === 1 ? '' : 's'}`);
-          if (s.lights) parts.push(`${s.lights} light${s.lights === 1 ? '' : 's'}`);
+          const count = (n, word) => (n ? `${n} ${word}${n === 1 ? '' : 's'}` : null);
+          const parts = [
+            count(s.thermostats, 'thermostat'),
+            count(s.heaters, 'pilot-wire heater'),
+            count(s.lights, 'light'),
+            count(s.shutters, 'shutter'),
+            count(s.sensors, 'sensor'),
+          ].filter(Boolean);
           return `● Connected${s.hostname ? ` at ${s.hostname}` : ''}${parts.length ? ` · ${parts.join(', ')}` : ''}`;
         }
         if (s.state === 'connecting') return 'Connecting…';
