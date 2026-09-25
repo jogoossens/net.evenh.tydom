@@ -19,5 +19,8 @@
   },
   "1.0.6": {
     "en": "Description and README updated to mention TYXIA light support alongside thermostats."
+  },
+  "1.1.0": {
+    "en": "Easier setup: sign in with your Tydom app (Delta Dore) account to import your gateway and its password automatically — the account password is used once and never stored. Supports multiple gateways, each with its own name. Saving the settings now tests the connection to each gateway. Existing setups and paired devices keep working."
   }
 }

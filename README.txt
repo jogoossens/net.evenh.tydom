@@ -1,3 +1,5 @@
 Talk to your Delta Dore Tydom gateway directly on your home network. Pull your Tybox thermostats and TYXIA wireless lights into Homey — current temperature, setpoint, mode, on/off, dim level, diagnostics, the lot. No cloud round-trip, no extra hardware.
 
 Then build flows the way only Homey lets you. Trigger a boost when a room can't catch up to its setpoint, end the boost the moment it does. Dim the lights from a presence flow. React to battery and sensor faults. Mode-aware flow cards work the same in heating and cooling season. Your existing Tydom installation keeps running exactly as it did — Homey just becomes the cleverest control surface on top.
+
+Setup takes a minute: sign in once with your Tydom app account and the app imports your gateway and its password for you — no sticker hunting. Your account password is only used for that import and is never stored; after that everything runs locally. Got more than one Tydom gateway, say at home and at a holiday house? Add them all and give each a name.
