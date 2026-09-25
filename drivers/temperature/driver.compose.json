@@ -1,6 +1,6 @@
 {
   "name": {
-    "en": "Temperature sensor (beta)"
+    "en": "Temperature sensor"
   },
   "class": "sensor",
   "capabilities": [

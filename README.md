@@ -6,7 +6,7 @@
 >
 > **Tested in production on a Tydom Home** (hardware ref 25170010, firmware 03.22.42) with Tybox thermostats: pairing, state reads, control writes, boost (setpoint derogation), alarms and mode changes all work. Tydom 1.0, 2.0 and Pro use the same local connection (confirmed by recorded traffic from those gateways) — reports from owners are very welcome.
 >
-> **Scope note**: production testing focused on **Tybox thermostats**. The TYXIA light driver and the **beta** drivers (shutters, door/window sensors, smoke detectors, temperature sensors, pilot-wire heating) were built and tested against recorded traffic from real Tydom gateways (see [Local test harness](#local-test-harness)), not on hardware — reports from owners are very welcome. Alarms, plugs, garage doors and gates are not implemented yet.
+> **Scope note**: production testing focused on **Tybox thermostats**. The TYXIA light driver and the shutter, door/window sensor, smoke detector, temperature sensor and pilot-wire heating drivers were built and tested against recorded traffic from real Tydom gateways (see [Local test harness](#local-test-harness)), not on hardware — reports from owners are very welcome. Alarms, plugs, garage doors and gates are not implemented yet.
 
 A local integration that exposes your Delta Dore Tybox thermostats and X3D lights as native Homey devices. All control runs on your LAN; the Delta Dore cloud is only contacted once, if you choose to import your gateway with your Tydom app account during setup.
 
@@ -117,7 +117,7 @@ Every Tybox thermostat exposed by your Tydom becomes one Homey device with:
 
 X3D lights (TYXIA series). Dimmable receivers get `onoff` + `dim`; on/off-only receivers (Tydom reports `level` in steps of 100, e.g. TYXIA 4910) get `onoff` only. Values are seeded on init and updated on Tydom push notifications.
 
-### Beta device types
+### Other device types
 
 Built against recorded traffic from real TYDOM1, Tydom Home, Tydom Pro and Tywell Pro gateways and covered by `tydom-test/driver-tests.js`, but not yet confirmed on hardware:
 
@@ -169,7 +169,7 @@ DEVICE=<deviceId> node tydom-test/test-boost.js   # test boost semantics on one 
 
 Device-specific scripts (`test-boost*.js`, `test-probe-hidden.js`, `test-restore-thermostat.js`) take the device id from `DEVICE` (and `ENDPOINT`, defaulting to the same id) — list ids with `test-connect.js`.
 
-`node tydom-test/driver-tests.js` runs the beta device drivers against a fake Homey and a fake gateway with recorded-style values (22 checks). `node tydom-test/replay-traces.js <path>` replays real gateway recordings from the [Home Assistant Tydom integration](https://github.com/CyrilP/hass-deltadore-tydom-component) (`tools/traces*.txt`, covering TYDOM1/2, Tydom Home/Pro and Tywell Pro) through the app's device recognition — useful for adding device types without owning the hardware.
+`node tydom-test/driver-tests.js` runs the shutter, sensor and heater drivers against a fake Homey and a fake gateway with recorded-style values (22 checks). `node tydom-test/replay-traces.js <path>` replays real gateway recordings from the [Home Assistant Tydom integration](https://github.com/CyrilP/hass-deltadore-tydom-component) (`tools/traces*.txt`, covering TYDOM1/2, Tydom Home/Pro and Tywell Pro) through the app's device recognition — useful for adding device types without owning the hardware.
 
 Silence the verbose `tydom-client` wire log by setting `DEBUG=` empty. Nothing is hardcoded in the scripts — all credentials and device ids come from env vars or `.env.json`.
 

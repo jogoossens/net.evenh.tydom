@@ -11,7 +11,7 @@
  *   node tydom-test/replay-traces.js /tmp/ha/tools
  *
  * Prints, per first_usage → last_usage, the category our resolver picks, and
- * the Homey values the beta drivers' mappings produce from recorded data.
+ * the Homey values the drivers' mappings produce from recorded data.
  */
 // One escaped HTTP message per line → { product, config, meta, data } snapshots.
 const fs = require('fs');
@@ -52,7 +52,7 @@ if (!dir) {
   console.error('Usage: node tydom-test/replay-traces.js <path to hass-deltadore-tydom-component/tools>');
   process.exit(1);
 }
-// Homey values a beta driver would show, from an endpoint's recorded values.
+// Homey values a driver would show, from an endpoint's recorded values.
 const MAPPED = {
   14: (v) => ({ windowcoverings_set: mappings.shutterPosition(v) }),
   12: (v) => ({ alarm_contact: mappings.contactOpen(v), alarm_battery: mappings.batteryAlarm(v) }),

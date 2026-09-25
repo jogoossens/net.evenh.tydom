@@ -27,6 +27,6 @@
     "en": "Setup is now 10x easier: add a device and Homey finds your Tydom on your network by itself; then briefly press the button on your Tydom (no account needed) or sign in with your Tydom app account. No IP address to type and no app restart. Works with Tydom 1.0, 2.0, Home and Pro gateways. Gateways reconnect automatically and follow IP changes, devices show why they're unavailable, and the app settings show the live status of each gateway. Pilot-wire heating zones no longer show up as thermostats. Existing setups and paired devices keep working."
   },
   "1.3.0": {
-    "en": "New in beta: shutters, door and window sensors, smoke detectors, temperature sensors and pilot-wire heating (Comfort, Eco, Frost protection, Off — with a flow card to set the mode). On/off-only light receivers no longer show a dim slider. The new device types were built and tested against recordings of real Tydom gateways; please let us know how they work with yours."
+    "en": "Adds support for shutters, door and window sensors, smoke detectors, temperature sensors and pilot-wire heating (Comfort, Eco, Frost protection, Off — with a flow card to set the mode). On/off-only light receivers no longer show a dim slider."
   }
 }

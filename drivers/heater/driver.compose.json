@@ -1,6 +1,6 @@
 {
   "name": {
-    "en": "Pilot-wire heating (beta)"
+    "en": "Pilot-wire heating"
   },
   "class": "heater",
   "capabilities": [

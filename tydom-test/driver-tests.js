@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 /**
- * Tests the beta device drivers without hardware: runs the compiled device
+ * Tests the shutter, sensor and heater drivers without hardware: runs the compiled device
  * classes against a fake Homey and a fake gateway serving values like those in
  * the recorded Tydom traffic (see replay-traces.js).
  *

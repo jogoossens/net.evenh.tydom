@@ -4,7 +4,7 @@ import DeviceLink from './device-link';
 import { EndpointValues } from './mappings';
 import { TydomDataElement } from './typings';
 
-// Base for the beta device types: keeps the endpoint's latest data values and
+// Base for the shutter, sensor and heater drivers: keeps the endpoint's latest data values and
 // calls onValues() whenever they change (initial read or a Tydom push).
 export default abstract class TydomDevice extends Device {
   link!: DeviceLink;

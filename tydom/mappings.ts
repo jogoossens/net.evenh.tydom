@@ -1,4 +1,4 @@
-// Tydom data → Homey capability values for the beta device types. Pure
+// Tydom data → Homey capability values for the shutter, sensor and heater drivers. Pure
 // functions over an endpoint's latest data values, so they can be checked
 // against recorded gateway traffic (tydom-test/replay-traces.js). Semantics
 // follow the Home Assistant Tydom integration.

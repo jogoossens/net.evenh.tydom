@@ -481,7 +481,7 @@
   "drivers": [
     {
       "name": {
-        "en": "Door/window sensor (beta)"
+        "en": "Door/window sensor"
       },
       "class": "sensor",
       "capabilities": [
@@ -549,7 +549,7 @@
     },
     {
       "name": {
-        "en": "Pilot-wire heating (beta)"
+        "en": "Pilot-wire heating"
       },
       "class": "heater",
       "capabilities": [
@@ -675,7 +675,7 @@
     },
     {
       "name": {
-        "en": "Shutter (beta)"
+        "en": "Shutter"
       },
       "class": "windowcoverings",
       "capabilities": [
@@ -738,7 +738,7 @@
     },
     {
       "name": {
-        "en": "Smoke detector (beta)"
+        "en": "Smoke detector"
       },
       "class": "sensor",
       "capabilities": [
@@ -806,7 +806,7 @@
     },
     {
       "name": {
-        "en": "Temperature sensor (beta)"
+        "en": "Temperature sensor"
       },
       "class": "sensor",
       "capabilities": [

@@ -13,7 +13,7 @@ The app is meant for many users: **nothing user-specific is hardcoded** — ever
 - `app.ts` — entrypoint. Creates the `Gateways` manager and re-attaches devices when the gateway list changes. Nothing waits for a connection.
 - `tydom/gateways.ts` — owns the `gateways` setting (`{name, mac, hostname, password}[]`): keeps one `TydomController` per entry in sync (changes apply immediately, no restart), fills in / follows gateway IPs from MAC discovery (`.homeycompose/discovery/tydom.json`, Delta Dore OUI `00:1A:25` = `[0, 26, 37]`), imports from the cloud, migrates old flat `hostname`/`username`/`password` keys.
 - `tydom/controller.ts` — one instance per gateway (keyed by MAC); wraps `tydom-client`. Connects + scans in the background with retries (10/30/60 s), exposes `state` / `lastError` / `ready`, emits `ready` / `unavailable`, and `getDevices(category)` for pairing.
-- `tydom/tydom-device.ts` + `tydom/mappings.ts` — base class for the beta drivers (shutter, contact, smoke, temperature, heater): keeps the endpoint's latest values and maps them with pure functions from `mappings.ts` (semantics from the Home Assistant integration). Covered by `tydom-test/driver-tests.js`.
+- `tydom/tydom-device.ts` + `tydom/mappings.ts` — base class for the shutter, contact, smoke, temperature and heater drivers: keeps the endpoint's latest values and maps them with pure functions from `mappings.ts` (semantics from the Home Assistant integration). Covered by `tydom-test/driver-tests.js`.
 - `tydom/device-link.ts` — links a device to its gateway's controller: unavailable with the reason while the gateway is down, re-seeded when it's back.
 - `tydom/pairing.ts` + `drivers/*/pair/start.html` — pair flow shared by both drivers: `start` view (skipped when a gateway is connected) → button press, `login_credentials` (Tydom app account) or sticker password → `list_devices`. Keep both `start.html` copies identical.
 - `tydom/local-pairing.ts` — button pairing: after a short press on the gateway, `wss://<ip>/mediation/client?mac=<MAC>&appli=1` answers `GET /configs/gateway/password` without auth (otherwise 401). Verified on Tydom Home firmware 03.22.42.
@@ -23,7 +23,7 @@ The app is meant for many users: **nothing user-specific is hardcoded** — ever
 - `api.ts` — settings-page endpoints `POST /cloud-login` and `GET /status`.
 - `tydom/helpers.ts` — endpoint→category resolution based on `first_usage` / metadata.
 - `drivers/light/` — `device.ts` maps `onoff` / `dim` to `updateLightLevel`.
-- `drivers/{shutter,contact,smoke,temperature,heater}/` — beta drivers; categories come from `resolveEndpointCategory` (pilot-wire = hvac without setpoint but with thermicLevel; smoke/temperature = `sensor` with `techSmokeDefect` / `outTemperature`). Each has its own copy of `pair/start.html`.
+- `drivers/{shutter,contact,smoke,temperature,heater}/` — built against recorded traffic, not confirmed on hardware; categories come from `resolveEndpointCategory` (pilot-wire = hvac without setpoint but with thermicLevel; smoke/temperature = `sensor` with `techSmokeDefect` / `outTemperature`). Each has its own copy of `pair/start.html`.
 - `drivers/thermostat/` — same pattern for `target_temperature` / `measure_temperature` / `onoff`.
 - `app.json` is generated from `.homeycompose/app.json` — edit the compose file, not the generated one.
 

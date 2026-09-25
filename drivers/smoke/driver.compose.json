@@ -1,6 +1,6 @@
 {
   "name": {
-    "en": "Smoke detector (beta)"
+    "en": "Smoke detector"
   },
   "class": "sensor",
   "capabilities": [

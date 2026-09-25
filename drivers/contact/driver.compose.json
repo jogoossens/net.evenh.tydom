@@ -1,6 +1,6 @@
 {
   "name": {
-    "en": "Door/window sensor (beta)"
+    "en": "Door/window sensor"
   },
   "class": "sensor",
   "capabilities": [
