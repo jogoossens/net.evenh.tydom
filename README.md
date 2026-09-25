@@ -1,23 +1,21 @@
 # Delta Dore Tydom for Homey Pro
 
-> # ✅ Verified working on Homey Pro + Tydom 1.0 / Tydom Home
+> # ✅ Works with every Tydom gateway — set up with one button press
 >
-> **This repository is a confirmed-working integration of the Delta Dore Tydom 1.0 gateway (also sold as "Tydom Home", retail SKU 6700105, hardware reference 25170010) with [Homey Pro](https://homey.app/).**
+> **Connect a Delta Dore Tydom 1.0, Tydom 2.0, Tydom Home or Tydom Pro to [Homey Pro](https://homey.app/).** Add a device, Homey finds your Tydom on the network by itself, briefly press the button on the Tydom — done. No account, no IP address, no sticker password needed.
 >
-> **Tested in production against real hardware** — Tybox thermostats pair, state reads, control writes, boost (setpoint derogation), alarms, mode changes all work on firmware 03.22.42.
+> **Tested in production on a Tydom Home** (hardware ref 25170010, firmware 03.22.42) with Tybox thermostats: pairing, state reads, control writes, boost (setpoint derogation), alarms and mode changes all work. Tydom 1.0, 2.0 and Pro use the same local connection (confirmed by recorded traffic from those gateways) — reports from owners are very welcome.
 >
-> **Scope note**: production testing focused on **Tybox thermostats**. The TYXIA light driver is shipped and re-enabled from 1.0.4 onwards but was not validated against real TYXIA receivers in this fork — bug reports from TYXIA owners are very welcome. Shutters, alarms, plugs, and door sensors are not implemented yet.
->
-> Not tested against Tydom 2.0 — that's a different, cloud-first product with a completely different API and this app will NOT work with it.
+> **Scope note**: production testing focused on **Tybox thermostats**. The TYXIA light driver is shipped but was not validated against real TYXIA receivers in this fork — bug reports from TYXIA owners are very welcome. Shutters, alarms, plugs, and door sensors are not implemented yet.
 
 A local integration that exposes your Delta Dore Tybox thermostats and X3D lights as native Homey devices. All control runs on your LAN; the Delta Dore cloud is only contacted once, if you choose to import your gateway with your Tydom app account during setup.
 
-This is a **fork of [evenh/net.evenh.tydom](https://github.com/evenh/net.evenh.tydom)** with fixes and new features needed to actually run on current Homey firmware and against the Tydom 1.0 gateway.
+This is a **fork of [evenh/net.evenh.tydom](https://github.com/evenh/net.evenh.tydom)** with fixes and new features needed to actually run on current Homey firmware and against current Tydom gateways.
 
 ## What this fork adds
 
 - **Fixes TypeScript compile failure** — upstream won't install as-is (duplicate `logger` declaration).
-- **Fixes TLS connection to the Tydom gateway** — Tydom 1.0 speaks pre-RFC5746 TLS which modern Node rejects as "unsafe legacy renegotiation disabled". The app now opts in to `SSL_OP_LEGACY_SERVER_CONNECT` globally.
+- **Fixes TLS connection to the Tydom gateway** — Tydom gateways speak pre-RFC5746 TLS which modern Node rejects as "unsafe legacy renegotiation disabled". The app now opts in to `SSL_OP_LEGACY_SERVER_CONNECT` globally.
 - **Removes the blocking debugger-wait** that caused the app to hang during `onInit` (and therefore the pair screen to spin forever).
 - **Setup from the add-device screen** — Homey finds the Tydom on your network by itself (MAC discovery), then you connect it by briefly pressing the gateway's button (fully local, no account) or by signing in with your Tydom app account (the account password is used once and never stored). No IP to type, no restart.
 - **Self-healing connections** — gateways reconnect automatically, follow IP changes, and devices show why they're unavailable.
@@ -31,7 +29,7 @@ This is a **fork of [evenh/net.evenh.tydom](https://github.com/evenh/net.evenh.t
 ## Requirements
 
 - Homey Pro (any generation, SDK v3 compatible)
-- Delta Dore Tydom 1.0 gateway on the same LAN
+- A Delta Dore Tydom gateway (1.0, 2.0, Home or Pro) on the same network as Homey
 - Your Tydom mobile app login (recommended), or the gateway sticker password
 
 ## Installation
@@ -86,6 +84,18 @@ If the sticker is missing or unreadable:
 
 - **Factory reset** — hold the button next to the power cable on the Tydom for ~15 s until the LED flashes fast violet, then set a new password from the Tydom mobile app. This may force re-pairing of X3D devices.
 
+## Supported gateways
+
+| Gateway | Status |
+|---|---|
+| Tydom Home | ✅ Tested in production |
+| Tydom 1.0 | Same local connection — should work, reports welcome |
+| Tydom 2.0 | Same local connection — should work, reports welcome. Copes badly with several local apps at once (e.g. Home Assistant *and* Homey). |
+| Tydom Pro | Same local connection — should work, reports welcome |
+| Tywell Pro | Connects, but its boilers aren't supported yet |
+
+All of them are found automatically by Homey (Delta Dore MAC prefix `00:1A:25`). The account import and the sticker password work for every model; the button pairing is verified on Tydom Home.
+
 ## Supported devices
 
 ### Thermostats (Tybox family)
@@ -115,7 +125,7 @@ Dimmable X3D lights (TYXIA series). Exposed as Homey devices with `onoff` and `d
 - **X3D receivers (multikits, 8-channel modules) are invisible** to the Tydom HTTP API. They're commanded by the thermostats over X3D radio directly; the gateway is not in the loop. You cannot control them from Homey through this app.
 - **Only lights and thermostats are implemented.** Shutters, alarms, plugs, door sensors, etc. are not yet supported even though the upstream Tydom protocol has metadata for them.
 - **Automatic discovery needs Homey and the Tydom on the same network segment** (it finds the gateway by its Delta Dore MAC prefix `00:1A:25`). Otherwise enter the IP in the app settings.
-- **Tydom 1.0 accepts one local connection at a time.** The Tydom mobile app on your Wi-Fi, a second Homey, or another integration talking to the same gateway will compete with this app.
+- **A Tydom gateway accepts one local connection at a time.** The Tydom mobile app on your Wi-Fi, a second Homey, or another integration talking to the same gateway will compete with this app.
 
 ## Local test harness
 
@@ -144,6 +154,8 @@ DEVICE=<deviceId> node tydom-test/test-boost.js   # test boost semantics on one 
 ```
 
 Device-specific scripts (`test-boost*.js`, `test-probe-hidden.js`, `test-restore-thermostat.js`) take the device id from `DEVICE` (and `ENDPOINT`, defaulting to the same id) — list ids with `test-connect.js`.
+
+`node tydom-test/replay-traces.js <path>` replays real gateway recordings from the [Home Assistant Tydom integration](https://github.com/CyrilP/hass-deltadore-tydom-component) (`tools/traces*.txt`, covering TYDOM1/2, Tydom Home/Pro and Tywell Pro) through the app's device recognition — useful for adding device types without owning the hardware.
 
 Silence the verbose `tydom-client` wire log by setting `DEBUG=` empty. Nothing is hardcoded in the scripts — all credentials and device ids come from env vars or `.env.json`.
 

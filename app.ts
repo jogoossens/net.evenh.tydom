@@ -22,7 +22,7 @@ class TydomApp extends App {
   gateways!: Gateways;
 
   async onInit() {
-    this.log('Delta Dore Tydom 1.0 has been initialized');
+    this.log('Delta Dore Tydom has been initialized');
 
     const logger = new DefaultLogger(this.log, this.error, this.debug);
     // Gateways connect in the background; devices follow their gateway's

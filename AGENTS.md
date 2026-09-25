@@ -1,10 +1,10 @@
 # AGENTS.md
 
-Guidance for coding agents (and humans) working on this Homey app — a fork of `net.evenh.tydom` that adds Delta Dore Tydom 1.0 gateway support to Homey Pro.
+Guidance for coding agents (and humans) working on this Homey app — a fork of `net.evenh.tydom` that adds Delta Dore Tydom gateway support (1.0, 2.0, Home, Pro) to Homey Pro.
 
 ## What this app is
 
-A Homey SDK v3 app that connects to a local Delta Dore Tydom 1.0 gateway over the LAN and exposes its **lights** and **thermostats** as Homey devices. It does not use the Delta Dore cloud — all control is local.
+A Homey SDK v3 app that connects to a local Delta Dore Tydom gateway (1.0, 2.0, Home, Pro — same local API; production-tested on Tydom Home) over the LAN and exposes its **lights** and **thermostats** as Homey devices. It does not use the Delta Dore cloud — all control is local.
 
 The app is meant for many users: **nothing user-specific is hardcoded** — every gateway comes from the Configure App settings page. The Delta Dore cloud is used only there, once, to import gateway credentials. mDNS discovery is declared in `app.json` but not wired to any driver.
 
@@ -15,7 +15,7 @@ The app is meant for many users: **nothing user-specific is hardcoded** — ever
 - `tydom/controller.ts` — one instance per gateway (keyed by MAC); wraps `tydom-client`. Connects + scans in the background with retries (10/30/60 s), exposes `state` / `lastError` / `ready`, emits `ready` / `unavailable`, and `getDevices(category)` for pairing.
 - `tydom/device-link.ts` — links a device to its gateway's controller: unavailable with the reason while the gateway is down, re-seeded when it's back.
 - `tydom/pairing.ts` + `drivers/*/pair/start.html` — pair flow shared by both drivers: `start` view (skipped when a gateway is connected) → button press, `login_credentials` (Tydom app account) or sticker password → `list_devices`. Keep both `start.html` copies identical.
-- `tydom/local-pairing.ts` — button pairing: after a short press on the gateway, `wss://<ip>/mediation/client?mac=<MAC>&appli=1` answers `GET /configs/gateway/password` without auth (otherwise 401). Verified on Tydom 1.0 firmware 03.22.42.
+- `tydom/local-pairing.ts` — button pairing: after a short press on the gateway, `wss://<ip>/mediation/client?mac=<MAC>&appli=1` answers `GET /configs/gateway/password` without auth (otherwise 401). Verified on Tydom Home firmware 03.22.42.
 - `settings/index.html` — Configure App page: live status per gateway (`GET /status`), name / IP / MAC / password, account import (`POST /cloud-login`).
 - `tydom/typings.ts` — Tydom API types + `Categories` enum (LIGHTBULB, THERMOSTAT, OTHER, …).
 - `tydom/cloud.ts` — Delta Dore cloud sign-in (Azure B2C, see Option A below): lists the account's sites (`GET sitesmanagement/api/v2/sites`) and reads each gateway's MAC + password (`GET sitesmanagement/api/v1/sites/{id}`). Account password is never stored.
@@ -118,7 +118,7 @@ Supported device classes: **light** and **thermostat** only. Shutters, alarms, D
 - Multi-gateway: devices store the gateway `mac` in their data and find their controller with `TydomController.find(mac)`; devices paired before multi-gateway support have no `mac` and fall back to the first gateway.
 - `tydom-client`'s `close()` does **not** stop its `retryOnClose` auto-reconnect, so a closed client keeps reconnecting and hogs the gateway's single connection. Controllers therefore create clients with `retryOnClose: false` and reconnect themselves.
 - `app.json` is generated — edit `.homeycompose/app.json` instead.
-- Tydom 1.0 serves **one local connection at a time**: a second client gets no answer (the first is unaffected). The Tydom mobile app on the LAN, another Homey, or a `tydom-test/` script all compete for it. The button-pairing websocket route is separate and works while the app is connected.
+- A Tydom gateway serves **one local connection at a time**: a second client gets no answer (the first is unaffected). The Tydom mobile app on the LAN, another Homey, or a `tydom-test/` script all compete for it. The button-pairing websocket route is separate and works while the app is connected.
 - A wrong gateway password gets either a `401` or silence, and the gateway can stay silent for ~a minute afterwards — wait before retrying when testing. The **username/MAC is not checked** locally (any value connects), so a successful connection only proves IP + password.
 
 ## Past bugs fixed
@@ -135,6 +135,8 @@ TYDOM_HOST=... TYDOM_USER=... TYDOM_PASS=... node tydom-test/test-connect.js   #
 DEVICE=<deviceId> node tydom-test/test-boost.js                    # device-specific scripts take DEVICE (+ optional ENDPOINT)
 DEBUG='' node tydom-test/test-connect.js                           # silence tydom-client wire log
 ```
+
+`tydom-test/replay-traces.js <ha-repo>/tools` replays Home Assistant's recorded gateway traffic (TYDOM1/2, Home, Pro, Tywell Pro) through `resolveEndpointCategory` — use it when adding device types; there's no real hardware for anything but Tybox thermostats.
 
 Clean output lists one line per endpoint: `deviceId`, `endpointId`, `name`, `firstUsage` (e.g. `hvac` → thermostat, `lightbulb` → light).
 

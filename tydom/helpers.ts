@@ -197,7 +197,27 @@ type ResolveEndpointCategoryOptions = {
   settings: Record<string, unknown>;
 };
 
-export const resolveEndpointCategory = ({
+// Pilot-wire heating zones (e.g. RF 6600 FP) share first_usage "hvac" with
+// real thermostats but have no setpoint — only a thermicLevel order — so the
+// thermostat driver can't drive them. Same rule as the Home Assistant Tydom
+// integration.
+const hasSetpoint = (metadata: TydomMetaElement[]) =>
+  metadata.some((m) =>
+    ['setpoint', 'heatSetpoint', 'coolSetpoint'].includes(m.name),
+  );
+
+export const resolveEndpointCategory = (
+  options: ResolveEndpointCategoryOptions,
+): Categories | null => {
+  const category = resolveCategory(options);
+  if (category === Categories.THERMOSTAT && !hasSetpoint(options.metadata)) {
+    debug(`Skipping hvac endpoint without setpoint (pilot-wire zone?)`);
+    return null;
+  }
+  return category;
+};
+
+const resolveCategory = ({
   firstUsage,
   metadata,
   settings,
