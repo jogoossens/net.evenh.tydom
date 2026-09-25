@@ -26,7 +26,8 @@
   },
   "dependencies": {
     "lodash": "^4.17.21",
-    "tydom-client": "^0.13.4"
+    "tydom-client": "^0.13.4",
+    "ws": "^8.21.3"
   },
   "engines": {
     "node": ">=16.16.0"

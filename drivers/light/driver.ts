@@ -1,6 +1,6 @@
 import Homey from 'homey';
 import { Categories } from '../../tydom/typings';
-import TydomController from '../../tydom/controller';
+import setupPairing from '../../tydom/pairing';
 
 class LightDriver extends Homey.Driver {
   async onInit() {
@@ -8,14 +8,8 @@ class LightDriver extends Homey.Driver {
     return Promise.resolve();
   }
 
-  /**
-   * onPairListDevices is called when a user is adding a device and the 'list_devices' view is called.
-   * This should return an array with the data of devices that are available for pairing.
-   */
-  async onPairListDevices() {
-    return TydomController.getInstances().flatMap((c) =>
-      c.getDevices(Categories.LIGHTBULB),
-    );
+  onPair(session: Parameters<NonNullable<Homey.Driver['onPair']>>[0]) {
+    setupPairing(this, session, Categories.LIGHTBULB);
   }
 }
 

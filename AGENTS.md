@@ -10,13 +10,18 @@ The app is meant for many users: **nothing user-specific is hardcoded** — ever
 
 ## Project layout
 
-- `app.ts` — entrypoint. Reads the `gateways` setting, creates one `TydomController` per gateway and calls `connect()` + `scan()` on init.
-- `settings/index.html` — Configure App page: Delta Dore sign-in + import, per-gateway name / IP / MAC / password, connection test on Save.
-- `tydom/controller.ts` — one instance per gateway (keyed by MAC); wraps the `tydom-client` npm package. Connects to the gateway, scans devices, emits updates, and exposes `getDevices(category)` for pair flows.
+- `app.ts` — entrypoint. Creates the `Gateways` manager and re-attaches devices when the gateway list changes. Nothing waits for a connection.
+- `tydom/gateways.ts` — owns the `gateways` setting (`{name, mac, hostname, password}[]`): keeps one `TydomController` per entry in sync (changes apply immediately, no restart), fills in / follows gateway IPs from MAC discovery (`.homeycompose/discovery/tydom.json`, Delta Dore OUI `00:1A:25` = `[0, 26, 37]`), imports from the cloud, migrates old flat `hostname`/`username`/`password` keys.
+- `tydom/controller.ts` — one instance per gateway (keyed by MAC); wraps `tydom-client`. Connects + scans in the background with retries (10/30/60 s), exposes `state` / `lastError` / `ready`, emits `ready` / `unavailable`, and `getDevices(category)` for pairing.
+- `tydom/device-link.ts` — links a device to its gateway's controller: unavailable with the reason while the gateway is down, re-seeded when it's back.
+- `tydom/pairing.ts` + `drivers/*/pair/start.html` — pair flow shared by both drivers: `start` view (skipped when a gateway is connected) → button press, `login_credentials` (Tydom app account) or sticker password → `list_devices`. Keep both `start.html` copies identical.
+- `tydom/local-pairing.ts` — button pairing: after a short press on the gateway, `wss://<ip>/mediation/client?mac=<MAC>&appli=1` answers `GET /configs/gateway/password` without auth (otherwise 401). Verified on Tydom 1.0 firmware 03.22.42.
+- `settings/index.html` — Configure App page: live status per gateway (`GET /status`), name / IP / MAC / password, account import (`POST /cloud-login`).
 - `tydom/typings.ts` — Tydom API types + `Categories` enum (LIGHTBULB, THERMOSTAT, OTHER, …).
-- `tydom/cloud.ts` + `api.ts` — `POST /cloud-login` settings-page endpoint: signs in to the Delta Dore cloud (Azure B2C, see Option A below), lists the account's sites (`GET sitesmanagement/api/v2/sites`) and reads each gateway's MAC + password (`GET sitesmanagement/api/v1/sites/{id}`). The page imports the ones the user ticks. `POST /test-connection` checks each gateway on Save. Account password is never stored.
+- `tydom/cloud.ts` — Delta Dore cloud sign-in (Azure B2C, see Option A below): lists the account's sites (`GET sitesmanagement/api/v2/sites`) and reads each gateway's MAC + password (`GET sitesmanagement/api/v1/sites/{id}`). Account password is never stored.
+- `api.ts` — settings-page endpoints `POST /cloud-login` and `GET /status`.
 - `tydom/helpers.ts` — endpoint→category resolution based on `first_usage` / metadata.
-- `drivers/light/` — `driver.ts` calls `controller.getDevices(Categories.LIGHTBULB)` on pair; `device.ts` maps `onoff` / `dim` to `updateLightLevel`.
+- `drivers/light/` — `device.ts` maps `onoff` / `dim` to `updateLightLevel`.
 - `drivers/thermostat/` — same pattern for `target_temperature` / `measure_temperature` / `onoff`.
 - `app.json` is generated from `.homeycompose/app.json` — edit the compose file, not the generated one.
 
@@ -39,7 +44,7 @@ homey app run
 
 ## Configuring credentials
 
-Homey → Apps → Delta Dore Tydom → Configure App. Sign in with the Delta Dore account to import gateways (MAC + password), enter each gateway's IP, Save (runs a connection test), restart the app. Stored in the `gateways` setting — never in code. Never commit real credentials, MACs, IPs or device ids; use placeholders like `001A25XXXXXX` / `192.168.1.50`.
+Normally done from pairing (Devices → + → Delta Dore Tydom): button press, Tydom app account or sticker password; the IP comes from MAC discovery. The Configure App page can import, edit or remove gateways. Stored in the `gateways` setting — never in code. Never commit real credentials, MACs, IPs or device ids; use placeholders like `001A25XXXXXX` / `192.168.1.50`.
 
 ### Finding the hostname
 
@@ -99,7 +104,7 @@ Once the app is running with correct credentials:
 
 1. Homey app → Devices → Add → Delta Dore Tydom
 2. Pick **Light** or **Thermostat**
-3. Homey calls `onPairListDevices` on the driver, which returns devices discovered during the `scan()` at app init
+3. The first time, the `start` view connects a gateway; then `list_devices` returns the devices from each connected gateway's `scan()`
 4. Select and add
 
 If the list is empty: the connection probably failed. Check `homey app run` logs — `401 Unauthorized` (or no answer at all) usually means a wrong gateway password; the MAC isn't checked by the gateway. Also make sure no other client (e.g. the Tydom mobile app on the LAN) holds the gateway's single local connection.
@@ -110,11 +115,11 @@ Supported device classes: **light** and **thermostat** only. Shutters, alarms, D
 
 - `app.ts` sets `NODE_TLS_REJECT_UNAUTHORIZED = '0'` globally — relaxed TLS is needed for the self-signed cert on the Tydom, but it disables TLS verification process-wide.
 - `app.ts` opens the Node inspector on `0.0.0.0:9229` and calls `waitForDebugger()` when `debug = true`. Set `this.debug = false` in production, or the app hangs waiting for a debugger to attach.
-- If `controller.connect()` throws in `onInit`, the app crashes — there's no retry loop.
-- Multi-gateway: settings key `gateways` is a list of `{mac, hostname, password}`; `app.ts` creates one `TydomController` per entry (keyed by MAC) and migrates old flat `hostname`/`username`/`password` keys on first start. Devices store `mac` in their data and call `TydomController.getInstance(mac)`; devices paired before this have no `mac` and fall back to the first gateway.
+- Multi-gateway: devices store the gateway `mac` in their data and find their controller with `TydomController.find(mac)`; devices paired before multi-gateway support have no `mac` and fall back to the first gateway.
+- `tydom-client`'s `close()` does **not** stop its `retryOnClose` auto-reconnect, so a closed client keeps reconnecting and hogs the gateway's single connection. Controllers therefore create clients with `retryOnClose: false` and reconnect themselves.
 - `app.json` is generated — edit `.homeycompose/app.json` instead.
-- Tydom 1.0 serves **one local connection at a time**: a second client gets no answer (the first is unaffected). The Tydom mobile app on the LAN, another Homey, or a `tydom-test/` script all compete for it. `POST /test-connection` therefore pings over the app's existing controller when the settings are unchanged.
-- A wrong gateway password gets either a `401` or silence, and the gateway can stay silent for ~a minute afterwards — wait before retrying when testing. The **username/MAC is not checked** locally (any value connects), so a passing connection test only proves IP + password.
+- Tydom 1.0 serves **one local connection at a time**: a second client gets no answer (the first is unaffected). The Tydom mobile app on the LAN, another Homey, or a `tydom-test/` script all compete for it. The button-pairing websocket route is separate and works while the app is connected.
+- A wrong gateway password gets either a `401` or silence, and the gateway can stay silent for ~a minute afterwards — wait before retrying when testing. The **username/MAC is not checked** locally (any value connects), so a successful connection only proves IP + password.
 
 ## Past bugs fixed
 

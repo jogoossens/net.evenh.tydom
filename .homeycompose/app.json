@@ -1,6 +1,6 @@
 {
   "id": "com.jogoossens.tydom",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "platforms": [
@@ -40,9 +40,9 @@
       "method": "POST",
       "path": "/cloud-login"
     },
-    "testConnection": {
-      "method": "POST",
-      "path": "/test-connection"
+    "status": {
+      "method": "GET",
+      "path": "/status"
     }
   }
 }

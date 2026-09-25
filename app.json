@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.jogoossens.tydom",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "platforms": [
@@ -41,9 +41,9 @@
       "method": "POST",
       "path": "/cloud-login"
     },
-    "testConnection": {
-      "method": "POST",
-      "path": "/test-connection"
+    "status": {
+      "method": "GET",
+      "path": "/status"
     }
   },
   "flow": {
@@ -424,6 +424,34 @@
       },
       "pair": [
         {
+          "id": "start"
+        },
+        {
+          "id": "login_credentials",
+          "template": "login_credentials",
+          "options": {
+            "title": {
+              "en": "Sign in with your Tydom app account"
+            },
+            "usernameLabel": {
+              "en": "E-mail"
+            },
+            "usernamePlaceholder": {
+              "en": "you@example.com"
+            },
+            "passwordLabel": {
+              "en": "Password"
+            },
+            "passwordPlaceholder": {
+              "en": "Tydom app password"
+            }
+          },
+          "navigation": {
+            "prev": "start",
+            "next": "list_devices"
+          }
+        },
+        {
           "id": "list_devices",
           "template": "list_devices",
           "navigation": {
@@ -525,6 +553,34 @@
       },
       "pair": [
         {
+          "id": "start"
+        },
+        {
+          "id": "login_credentials",
+          "template": "login_credentials",
+          "options": {
+            "title": {
+              "en": "Sign in with your Tydom app account"
+            },
+            "usernameLabel": {
+              "en": "E-mail"
+            },
+            "usernamePlaceholder": {
+              "en": "you@example.com"
+            },
+            "passwordLabel": {
+              "en": "Password"
+            },
+            "passwordPlaceholder": {
+              "en": "Tydom app password"
+            }
+          },
+          "navigation": {
+            "prev": "start",
+            "next": "list_devices"
+          }
+        },
+        {
           "id": "list_devices",
           "template": "list_devices",
           "navigation": {
@@ -540,24 +596,17 @@
     }
   ],
   "discovery": {
-    "tydom1": {
-      "type": "mdns-sd",
-      "mdns-sd": {
-        "name": "https",
-        "protocol": "tcp"
-      },
-      "id": "{{txt.SerialNumber}}",
-      "conditions": [
-        [
-          {
-            "field": "txt.manufacturer",
-            "match": {
-              "type": "string",
-              "value": "DeltaDore"
-            }
-          }
+    "tydom": {
+      "type": "mac",
+      "mac": {
+        "manufacturer": [
+          [
+            0,
+            26,
+            37
+          ]
         ]
-      ]
+      }
     }
   }
 }

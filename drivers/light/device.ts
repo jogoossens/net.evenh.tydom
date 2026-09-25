@@ -2,12 +2,16 @@ import { isFinite } from 'lodash';
 import { Device } from 'homey';
 import { TydomDataElement } from '../../tydom/typings';
 import TydomController from '../../tydom/controller';
+import DeviceLink from '../../tydom/device-link';
 
 class Light extends Device {
-  api!: TydomController;
+  link!: DeviceLink;
+
+  private get api(): TydomController {
+    return this.link.connected;
+  }
 
   async onInit() {
-    this.api = await TydomController.getInstance(this.getData().mac);
 
     this.registerMultipleCapabilityListener(
       ['onoff', 'dim'],
@@ -26,14 +30,12 @@ class Light extends Device {
     );
 
     // Receive out-of-band level changes, e.g. performed with physical controls.
-    this.api.subscribeTo(
-      this.getData().id,
-      async (update: TydomDataElement) => {
-        await this.onTydomStateChange(update);
-      },
+    this.link = new DeviceLink(
+      this,
+      (update: TydomDataElement) => this.onTydomStateChange(update),
+      () => this.seedInitialState(),
     );
-
-    await this.seedInitialState();
+    this.link.attach();
 
     this.log('Light has been initialized');
   }
@@ -50,7 +52,7 @@ class Light extends Device {
 
   // Clean up OOB level changes.
   async onUninit() {
-    this.api.removeSubscription(this.getData().id);
+    this.link.detach();
   }
 
   private async setLevel(level: number) {

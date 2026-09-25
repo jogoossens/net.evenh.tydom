@@ -2,4 +2,6 @@ Talk to your Delta Dore Tydom gateway directly on your home network. Pull your T
 
 Then build flows the way only Homey lets you. Trigger a boost when a room can't catch up to its setpoint, end the boost the moment it does. Dim the lights from a presence flow. React to battery and sensor faults. Mode-aware flow cards work the same in heating and cooling season. Your existing Tydom installation keeps running exactly as it did — Homey just becomes the cleverest control surface on top.
 
-Setup takes a minute: sign in once with your Tydom app account and the app imports your gateway and its password for you — no sticker hunting. Your account password is only used for that import and is never stored; after that everything runs locally. Got more than one Tydom gateway, say at home and at a holiday house? Add them all and give each a name.
+Getting started takes a minute: go to Devices, tap +, choose Delta Dore Tydom and pick Thermostat or Light. Homey finds your Tydom on your network by itself. Then connect it in one of two ways: briefly press the button on your Tydom (no account needed), or sign in with the email and password of your Tydom mobile app. Your thermostats and lights appear, tick the ones you want, done. No IP addresses, no sticker hunting, no restart. Your Tydom app password is only used for that one sign-in and is never stored; everything else runs locally.
+
+Got more than one Tydom, say at home and at a holiday house? Add them all and give each a name in the app settings, where you also see the live connection status of every gateway.

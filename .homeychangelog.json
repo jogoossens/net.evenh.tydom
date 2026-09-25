@@ -22,5 +22,8 @@
   },
   "1.1.0": {
     "en": "Easier setup: sign in with your Tydom app (Delta Dore) account to import your gateway and its password automatically — the account password is used once and never stored. Supports multiple gateways, each with its own name. Saving the settings now tests the connection to each gateway. Existing setups and paired devices keep working."
+  },
+  "1.2.0": {
+    "en": "Much easier setup, right from adding a device: Homey finds your Tydom on your network automatically, then you connect it by briefly pressing the button on the Tydom or by signing in with your Tydom app account. No IP address to type and no app restart. Gateways reconnect automatically and follow IP changes, devices show why they are unavailable, and the app settings show the live status of each gateway. Supports multiple gateways. Existing setups and paired devices keep working."
   }
 }

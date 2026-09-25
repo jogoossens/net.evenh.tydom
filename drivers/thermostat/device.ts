@@ -1,6 +1,7 @@
 import { Device } from 'homey';
 import _ from 'lodash';
 import TydomController from '../../tydom/controller';
+import DeviceLink from '../../tydom/device-link';
 import { TydomDataElement } from '../../tydom/typings';
 
 // Max derogation duration (minutes). 65535 ≈ 45 days — effectively "no auto-off"
@@ -10,7 +11,7 @@ const BOOST_SETPOINT_HEATING = 30;
 const BOOST_SETPOINT_COOLING = 10;
 
 class Thermostat extends Device {
-  api!: TydomController;
+  link!: DeviceLink;
   private lastAuthorization: string = 'AUTO';
   private lastHvacMode: string = 'NORMAL';
   private sensorFaults: { defect: boolean; shortCut: boolean; openCirc: boolean } = {
@@ -21,9 +22,11 @@ class Thermostat extends Device {
   private lastMeasured: number | null = null;
   private lastSetpoint: number | null = null;
 
-  async onInit() {
-    this.api = await TydomController.getInstance(this.getData().mac);
+  private get api(): TydomController {
+    return this.link.connected;
+  }
 
+  async onInit() {
     if (!this.hasCapability('thermostat_mode')) {
       await this.addCapability('thermostat_mode');
     }
@@ -57,15 +60,15 @@ class Thermostat extends Device {
     });
 
     // Receive out-of-band level changes, e.g. performed with physical controls.
-    this.api.subscribeTo(
-      this.getData().id,
+    this.link = new DeviceLink(
+      this,
       async (update: TydomDataElement) => {
         super.log(`update: ${JSON.stringify(update)}`);
         await this.onTydomStateChange(update);
       },
+      () => this.seedInitialState(),
     );
-
-    await this.seedInitialState();
+    this.link.attach();
 
     this.log('Thermostat has been initialized');
   }
@@ -143,7 +146,7 @@ class Thermostat extends Device {
 
   // Clean up OOB level changes.
   async onUninit() {
-    this.api.removeSubscription(this.getData().id);
+    this.link.detach();
   }
 
   private async setTargetTemperature(value: number) {

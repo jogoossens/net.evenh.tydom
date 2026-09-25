@@ -5,18 +5,32 @@
   <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
   <style>
     .gateway { border-top: 1px solid #ddd; padding-top: 0.75em; margin-top: 0.75em; }
-    .gateway-title { font-weight: bold; }
-    .found { display: block; margin: 0.4em 0; }
+    .gateway-title { font-weight: bold; margin-bottom: 0.2em; }
+    .gateway-status { margin: 0 0 0.6em; }
+    .state-connected { color: #27ae60; }
+    .state-error { color: #c0392b; }
+    .state-connecting { color: #888; }
   </style>
 </head>
 <body>
   <header class="homey-header">
     <h1 class="homey-title">Delta Dore Tydom</h1>
-    <p class="homey-subtitle">Connect one or more Tydom 1.0 gateways.</p>
+    <p class="homey-subtitle">Easiest: just add a device (Devices → + → Delta Dore Tydom) — you'll be guided to connect your Tydom. Use this page to manage your gateways.</p>
   </header>
 
   <fieldset class="homey-form-fieldset">
-    <legend class="homey-form-legend">1. Import from your Delta Dore account</legend>
+    <legend class="homey-form-legend">Gateways</legend>
+    <div id="gateways"></div>
+    <p id="no-gateways" class="homey-form-helper-text">No gateways yet.</p>
+    <p id="discovered" class="homey-form-helper-text"></p>
+    <button id="add" class="homey-button-secondary-full">Add gateway manually</button>
+  </fieldset>
+
+  <button id="save" class="homey-button-primary-full">Save</button>
+  <p id="status" style="margin-top: 1em; color: #888;"></p>
+
+  <fieldset class="homey-form-fieldset">
+    <legend class="homey-form-legend">Import from your Tydom app account</legend>
 
     <div class="homey-form-group">
       <label class="homey-form-label" for="cloud-email">Email</label>
@@ -26,36 +40,25 @@
     <div class="homey-form-group">
       <label class="homey-form-label" for="cloud-password">Password</label>
       <input class="homey-form-input" id="cloud-password" type="password" autocomplete="current-password" />
-      <p class="homey-form-helper-text">The login you use in the Tydom mobile app. Used once to fetch your gateways, never stored.</p>
-    </div>
-
-    <div id="found" style="display: none;">
-      <p class="homey-form-label">Gateways on your account</p>
-      <div id="found-list"></div>
-      <button id="import" class="homey-button-secondary-full">Import selected</button>
+      <p class="homey-form-helper-text">The login you use in the Tydom mobile app. Used once to fetch your gateways and their passwords, never stored.</p>
     </div>
   </fieldset>
 
-  <button id="cloud-login" class="homey-button-primary-full">Find my gateways</button>
-
+  <button id="cloud-login" class="homey-button-secondary-full">Import my gateways</button>
   <p id="cloud-status" style="margin-top: 1em; color: #888;"></p>
-
-  <fieldset class="homey-form-fieldset">
-    <legend class="homey-form-legend">2. Gateways</legend>
-    <div id="gateways"></div>
-    <p id="no-gateways" class="homey-form-helper-text">No gateways yet — import them above or add one manually.</p>
-    <button id="add" class="homey-button-secondary-full">Add gateway manually</button>
-  </fieldset>
-
-  <button id="save" class="homey-button-primary-full">Save</button>
-
-  <p id="status" style="margin-top: 1em; color: #888;"></p>
 
   <script type="text/javascript">
     function onHomeyReady(Homey) {
       const $ = (id) => document.getElementById(id);
       let gateways = [];
-      let found = [];
+
+      const load = () => new Promise((resolve) => {
+        Homey.get('gateways', (err, value) => {
+          gateways = Array.isArray(value) ? value : [];
+          render();
+          resolve();
+        });
+      });
 
       const input = (label, type, value, placeholder, onInput, helper) => {
         const group = document.createElement('div');
@@ -76,7 +79,7 @@
           h.textContent = helper;
           group.append(h);
         }
-        return group;
+        return { group, input: i };
       };
 
       const render = () => {
@@ -86,48 +89,100 @@
         gateways.forEach((gw, idx) => {
           const row = document.createElement('div');
           row.className = 'gateway';
+          row.dataset.mac = gw.mac;
           const title = document.createElement('p');
           title.className = 'gateway-title';
-          title.textContent = gw.name || gw.mac || 'New gateway';
-          row.append(
-            title,
-            input('Name', 'text', gw.name || '', 'e.g. Home, Holiday house', (v) => { gw.name = v.trim(); title.textContent = gw.name || gw.mac || 'New gateway'; },
-              'Shown after device names when you have several gateways, e.g. "Thermostat · Holiday house".'),
-            input('Hostname / IP', 'text', gw.hostname, '192.168.1.50', (v) => { gw.hostname = v.trim(); },
-              'Local IP of this gateway (router DHCP list, MAC prefix 00:1A:25).'),
-            input('MAC address', 'text', gw.mac, '001A25XXXXXX', (v) => { gw.mac = v.trim().toUpperCase(); title.textContent = gw.name || gw.mac || 'New gateway'; },
-              '12 hex chars, no separators — on the sticker.'),
-            input('Gateway password', 'password', gw.password, 'Sticker password', (v) => { gw.password = v; },
-              'Not your Delta Dore account password. Filled in by the import.'),
-          );
+          const setTitle = () => { title.textContent = gw.name || (gw.mac ? `Tydom ${gw.mac.slice(6)}` : 'New gateway'); };
+          setTitle();
+          const status = document.createElement('p');
+          status.className = 'gateway-status state-connecting';
+          status.textContent = gw.mac ? 'Checking…' : 'Not saved yet';
+          const name = input('Name', 'text', gw.name || '', 'e.g. Home, Holiday house', (v) => { gw.name = v.trim(); setTitle(); },
+            'Shown after device names when you have several gateways, e.g. "Thermostat · Holiday house".');
+          const ip = input('IP address', 'text', gw.hostname || '', 'Found automatically', (v) => { gw.hostname = v.trim(); },
+            'Leave empty to find the gateway on your network automatically.');
+          ip.input.classList.add('gateway-ip');
+          const mac = input('MAC address', 'text', gw.mac, '001A25XXXXXX', (v) => { gw.mac = v.replace(/[^0-9a-f]/gi, '').toUpperCase(); },
+            '12 characters, on the sticker.');
+          const password = input('Gateway password', 'password', gw.password, 'Sticker password', (v) => { gw.password = v; },
+            'Filled in by the import or the button pairing. Not your Tydom app password.');
           const remove = document.createElement('button');
           remove.className = 'homey-button-transparent';
           remove.textContent = 'Remove';
           remove.addEventListener('click', () => { gateways.splice(idx, 1); render(); });
-          row.append(remove);
+          row.append(title, status, name.group, ip.group, mac.group, password.group, remove);
           list.append(row);
         });
       };
 
-      Homey.get('gateways', (err, value) => {
-        gateways = Array.isArray(value) ? value : [];
-        render();
+      // Live status; only touches status lines and empty IP fields so edits survive.
+      const describe = (s) => {
+        if (s.state === 'connected') {
+          const parts = [];
+          if (s.thermostats) parts.push(`${s.thermostats} thermostat${s.thermostats === 1 ? '' : 's'}`);
+          if (s.lights) parts.push(`${s.lights} light${s.lights === 1 ? '' : 's'}`);
+          return `● Connected${s.hostname ? ` at ${s.hostname}` : ''}${parts.length ? ` · ${parts.join(', ')}` : ''}`;
+        }
+        if (s.state === 'connecting') return 'Connecting…';
+        return s.error || 'Not connected';
+      };
+      const poll = () => Homey.api('GET', '/status', null, (err, result) => {
+        if (err || !result) return;
+        document.querySelectorAll('.gateway').forEach((row) => {
+          const s = result.gateways.find((g) => g.mac === row.dataset.mac);
+          const line = row.querySelector('.gateway-status');
+          if (!s) return;
+          line.textContent = describe(s);
+          line.className = `gateway-status state-${s.state === 'stopped' ? 'error' : s.state}`;
+          const ip = row.querySelector('.gateway-ip');
+          const gw = gateways.find((g) => g.mac === s.mac);
+          if (gw && !gw.hostname && s.hostname && document.activeElement !== ip) {
+            gw.hostname = s.hostname;
+            ip.value = s.hostname;
+          }
+        });
+        const fresh = result.discovered.filter((d) => !d.configured);
+        $('discovered').textContent = fresh.length
+          ? `Found on your network and not set up yet: ${fresh.map((d) => `Tydom ${d.mac.slice(6)} (${d.address})`).join(', ')}. Add a device or import your account to connect it.`
+          : '';
       });
+
+      load().then(poll);
+      setInterval(poll, 3000);
 
       $('add').addEventListener('click', () => {
         gateways.push({ name: '', mac: '', hostname: '', password: '' });
         render();
       });
 
+      $('save').addEventListener('click', () => {
+        const macs = new Set();
+        for (const gw of gateways) {
+          const label = gw.name || gw.mac || 'New gateway';
+          if (!/^[0-9A-F]{12}$/.test(gw.mac)) { Homey.alert(`${label}: MAC must be 12 hex characters (no separators).`); return; }
+          if (macs.has(gw.mac)) { Homey.alert(`${label} is listed twice.`); return; }
+          if (!gw.password) { Homey.alert(`${label}: enter its gateway password.`); return; }
+          macs.add(gw.mac);
+        }
+        // Several gateways need names to tell their devices apart.
+        if (gateways.length > 1) gateways.forEach((gw, i) => { if (!gw.name) gw.name = `Tydom ${i + 1}`; });
+
+        $('status').textContent = 'Saving…';
+        Homey.set('gateways', gateways, (err) => {
+          if (err) { Homey.alert(err); return; }
+          $('status').textContent = 'Saved — connecting, see the status of each gateway above.';
+          load().then(poll);
+        });
+      });
+
       $('cloud-login').addEventListener('click', () => {
         const email = $('cloud-email').value.trim();
         const password = $('cloud-password').value;
         if (!email || !password) {
-          Homey.alert('Enter your Delta Dore account email and password.');
+          Homey.alert('Enter your Tydom app email and password.');
           return;
         }
 
-        $('found').style.display = 'none';
         $('cloud-status').textContent = 'Signing in to Delta Dore…';
         Homey.api('POST', '/cloud-login', { email, password }, (err, result) => {
           $('cloud-password').value = '';
@@ -136,75 +191,9 @@
             Homey.alert(err.message || String(err));
             return;
           }
-          found = result.gateways;
-          const list = $('found-list');
-          list.innerHTML = '';
-          found.forEach((gw, idx) => {
-            const known = gateways.some((g) => g.mac === gw.mac);
-            const label = document.createElement('label');
-            label.className = 'found';
-            const box = document.createElement('input');
-            box.type = 'checkbox';
-            box.checked = true;
-            box.dataset.idx = idx;
-            label.append(box, ` ${gw.mac}${known ? ' (already added — updates password)' : ''}`);
-            list.append(label);
-          });
-          $('found').style.display = '';
-          $('cloud-status').textContent = `${found.length} gateway${found.length === 1 ? '' : 's'} found.`;
-        });
-      });
-
-      $('import').addEventListener('click', () => {
-        const picked = [...$('found-list').querySelectorAll('input:checked')].map((b) => found[b.dataset.idx]);
-        if (!picked.length) {
-          Homey.alert('Select at least one gateway.');
-          return;
-        }
-        picked.forEach((gw) => {
-          const existing = gateways.find((g) => g.mac === gw.mac);
-          if (existing) existing.password = gw.password;
-          else gateways.push({ name: '', mac: gw.mac, hostname: '', password: gw.password });
-        });
-        $('found').style.display = 'none';
-        render();
-        $('cloud-status').textContent = `Imported ${picked.length} gateway${picked.length === 1 ? '' : 's'} — enter the IP (and a name if you have several) of each below, then tap Save.`;
-      });
-
-      $('save').addEventListener('click', async () => {
-        const macs = new Set();
-        for (const gw of gateways) {
-          const name = gw.name || gw.mac || 'New gateway';
-          if (!/^[0-9A-F]{12}$/.test(gw.mac)) { Homey.alert(`${name}: MAC must be 12 hex characters (no separators).`); return; }
-          if (macs.has(gw.mac)) { Homey.alert(`${name} is listed twice.`); return; }
-          if (!gw.hostname) { Homey.alert(`${name}: enter its hostname / IP.`); return; }
-          if (!gw.password) { Homey.alert(`${name}: enter its gateway password.`); return; }
-          if (gateways.length > 1 && !gw.name) { Homey.alert(`${name}: give it a name (e.g. Home) so you can tell your gateways apart.`); return; }
-          macs.add(gw.mac);
-        }
-
-        // Test each gateway before saving; a busy gateway isn't necessarily
-        // misconfigured, so the user can still save on failure.
-        const failures = [];
-        for (const gw of gateways) {
-          const name = gw.name || gw.mac;
-          $('status').textContent = `Testing connection to ${name}…`;
-          const err = await new Promise((resolve) => {
-            Homey.api('POST', '/test-connection', { mac: gw.mac, hostname: gw.hostname, password: gw.password }, (e) => resolve(e));
-          });
-          if (err) failures.push(`${name}: ${err.message || err}`);
-        }
-        if (failures.length) {
-          const saveAnyway = await new Promise((resolve) => {
-            Homey.confirm(`Connection test failed:\n\n${failures.join('\n\n')}\n\nSave anyway?`, 'warning', (e, yes) => resolve(!e && yes));
-          });
-          if (!saveAnyway) { $('status').textContent = ''; return; }
-        }
-
-        $('status').textContent = 'Saving…';
-        Homey.set('gateways', gateways, (err) => {
-          if (err) { Homey.alert(err); return; }
-          $('status').textContent = `${failures.length ? 'Saved.' : 'Connection OK — saved.'} Restart the app (Apps → Delta Dore Tydom → gear → Restart) to apply.`;
+          const n = result.gateways.length;
+          $('cloud-status').textContent = `Imported ${n} gateway${n === 1 ? '' : 's'} — connecting, see the status above.`;
+          load().then(poll);
         });
       });
 

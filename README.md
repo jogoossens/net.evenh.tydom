@@ -19,9 +19,9 @@ This is a **fork of [evenh/net.evenh.tydom](https://github.com/evenh/net.evenh.t
 - **Fixes TypeScript compile failure** — upstream won't install as-is (duplicate `logger` declaration).
 - **Fixes TLS connection to the Tydom gateway** — Tydom 1.0 speaks pre-RFC5746 TLS which modern Node rejects as "unsafe legacy renegotiation disabled". The app now opts in to `SSL_OP_LEGACY_SERVER_CONNECT` globally.
 - **Removes the blocking debugger-wait** that caused the app to hang during `onInit` (and therefore the pair screen to spin forever).
-- **One-step setup with your Tydom app account** — sign in on the settings page and the app imports your gateway's MAC and password from Delta Dore. The account password is used for that one request and never stored.
-- **Multiple gateways** — add as many Tydom gateways as you like (e.g. home + holiday house), each with its own name.
-- **Connection test on Save** — each gateway is tested before its settings are stored, with clear messages for a wrong IP, a wrong password or a busy gateway.
+- **Setup from the add-device screen** — Homey finds the Tydom on your network by itself (MAC discovery), then you connect it by briefly pressing the gateway's button (fully local, no account) or by signing in with your Tydom app account (the account password is used once and never stored). No IP to type, no restart.
+- **Self-healing connections** — gateways reconnect automatically, follow IP changes, and devices show why they're unavailable.
+- **Multiple gateways** — add as many Tydom gateways as you like (e.g. home + holiday house), each with its own name; the app settings show each gateway's live status.
 - **Thermostat mode capability** — heat / cool / auto / off, mapped to the Tydom `authorization` field.
 - **Boost (force on)** — exposed as an `onoff.boost` toggle. Implemented as a Tydom setpoint derogation (since the nominal `boostOn` field is silently ignored on Tybox models). Boost ON → setpoint forced to 30 °C (heating) or 10 °C (cooling) for effectively unlimited time; Boost OFF cancels the derogation.
 - **Alarms**: `alarm_battery` (battery fault on the remote command unit), `alarm_generic.production` (generic production fault), `alarm_generic.sensor` (any of three sensor-fault flags). All auto-usable as Homey flow triggers and conditions.
@@ -42,18 +42,20 @@ Developers can install from source with the Homey CLI instead — see [Developme
 
 ## Setup
 
-1. In Homey, open **Settings → Apps → Delta Dore Tydom → Configure app**.
-2. Under **Import from your Delta Dore account**, enter the email and password you use in the Tydom mobile app and tap **Find my gateways**.
-3. Tick the gateway(s) to import and tap **Import selected**. The MAC address and gateway password are filled in for you.
-4. Enter the **local IP** of each gateway (see your router's DHCP list; Delta Dore devices have MAC prefix `00:1A:25`). With more than one gateway, also give each a **name** — it is shown after device names when pairing, e.g. "Thermostat · Holiday house".
-5. Tap **Save**. The app tests the connection to each gateway first.
-6. Restart the app (gear icon → Restart), then add devices: **Devices → + → Delta Dore Tydom → Thermostat / Light**.
+1. In Homey, go to **Devices → + → Delta Dore Tydom** and pick **Thermostat** or **Light**.
+2. The first time, Homey looks for your Tydom on your network and shows what it found. Connect it one of these ways:
+   - **Press the button on your Tydom** — tap **Start**, then briefly press the button next to the Tydom's power cable (about half a second). No account needed. **Don't hold it**: holding it for ~15 seconds factory-resets the gateway.
+   - **Sign in with your Tydom app account** — the email and password of the Tydom mobile app. The app fetches the gateway password from Delta Dore; your account password is not stored.
+   - **Use the password from the sticker** on the back of the Tydom.
+3. Your thermostats / lights appear — tick the ones you want. Adding more devices later skips step 2.
 
-Tip: close the Tydom app on your phone while setting up. The gateway accepts only one local connection at a time, so the phone app can make the connection test report a busy gateway.
+The app settings (**Settings → Apps → Delta Dore Tydom → Configure app**) show each gateway's live status, let you name gateways (shown after device names when you have several, e.g. "Thermostat · Holiday house"), import all gateways of your account at once, or remove one. Changes apply immediately.
 
-### Manual setup (not needed with the account import)
+Tip: close the Tydom app on your phone while setting up. The gateway accepts only one local connection at a time.
 
-If you don't want to use your Delta Dore account, tap **Add gateway manually** and fill in:
+### Manual setup (normally not needed)
+
+If the gateway isn't found automatically (e.g. it's on a different network segment than Homey), open the app settings, tap **Add gateway manually** and fill in:
 
 - **Hostname / IP** — the local IP of the Tydom gateway
 - **MAC address** — the 12-char hex string on the gateway sticker, uppercase, no separators (e.g. `001A25XXXXXX`)
@@ -112,8 +114,7 @@ Dimmable X3D lights (TYXIA series). Exposed as Homey devices with `onoff` and `d
 - **Master / follower zone relationships between thermostats are not visible** via the API. If you have a pair of Tyboxes where one follows the other via X3D binding, Homey will show them as two independent devices; writes to the follower may silently have no physical effect.
 - **X3D receivers (multikits, 8-channel modules) are invisible** to the Tydom HTTP API. They're commanded by the thermostats over X3D radio directly; the gateway is not in the loop. You cannot control them from Homey through this app.
 - **Only lights and thermostats are implemented.** Shutters, alarms, plugs, door sensors, etc. are not yet supported even though the upstream Tydom protocol has metadata for them.
-- **Gateway changes require an app restart** to pick up new credentials (there's no runtime reconnect).
-- **The gateway IP has to be entered by hand** — the Delta Dore cloud doesn't know your gateway's local IP.
+- **Automatic discovery needs Homey and the Tydom on the same network segment** (it finds the gateway by its Delta Dore MAC prefix `00:1A:25`). Otherwise enter the IP in the app settings.
 - **Tydom 1.0 accepts one local connection at a time.** The Tydom mobile app on your Wi-Fi, a second Homey, or another integration talking to the same gateway will compete with this app.
 
 ## Local test harness
