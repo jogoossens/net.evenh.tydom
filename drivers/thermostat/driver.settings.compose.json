@@ -1,0 +1,17 @@
+[
+  {
+    "id": "switch_mode",
+    "type": "dropdown",
+    "label": { "en": "Use as on/off switch", "nl": "Gebruiken als aan/uit-schakelaar" },
+    "hint": {
+      "en": "For a thermostat that only opens a valve, e.g. the air inlet of an air conditioner. On = the thermostat always asks for cooling (setpoint 10 °C) or heating (setpoint 30 °C), so the valve opens; off = the thermostat is off. Setpoint, mode and boost are then hidden.",
+      "nl": "Voor een thermostaat die alleen een klep opent, bv. de luchttoevoer van een airco. Aan = de thermostaat vraagt altijd om koeling (instelpunt 10 °C) of verwarming (instelpunt 30 °C), zodat de klep opent; uit = de thermostaat staat uit. Instelpunt, stand en boost worden dan verborgen."
+    },
+    "value": "no",
+    "values": [
+      { "id": "no", "label": { "en": "No", "nl": "Nee" } },
+      { "id": "cool", "label": { "en": "Yes — on means cooling", "nl": "Ja — aan betekent koelen" } },
+      { "id": "heat", "label": { "en": "Yes — on means heating", "nl": "Ja — aan betekent verwarmen" } }
+    ]
+  }
+]

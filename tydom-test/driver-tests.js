@@ -10,8 +10,10 @@ const Module = require('module');
 const path = require('path');
 const B = path.join(__dirname, '..', '.homeybuild');
 class FakeDevice {
-  constructor(data, store = {}, caps) { this._data = data; this._store = store; this.caps = new Map(caps.map((c) => [c, undefined])); this.listeners = {}; this.available = null; this.errors = []; }
-  getData() { return this._data; } getStoreValue(k) { return this._store[k]; }
+  constructor(data, store = {}, caps, settings = {}) { this._data = data; this._store = store; this._settings = settings; this.caps = new Map(caps.map((c) => [c, undefined])); this.listeners = {}; this.available = null; this.errors = [];
+    this.homey = { flow: { getDeviceTriggerCard: () => ({ trigger: async () => {} }) } }; }
+  getData() { return this._data; } getStoreValue(k) { return this._store[k]; } getSetting(k) { return this._settings[k]; }
+  async addCapability(c) { this.caps.set(c, undefined); }
   hasCapability(c) { return this.caps.has(c); } async removeCapability(c) { this.caps.delete(c); }
   async setCapabilityValue(c, v) { if (!this.caps.has(c)) throw new Error('no cap ' + c); this.caps.set(c, v); }
   registerCapabilityListener(c, fn) { this.listeners[c] = fn; }
@@ -28,6 +30,9 @@ function fakeController(values) {
   const ee = new (require('events'))(); ee.ready = true; ee.puts = [];
   ee.getDeviceState = async () => Object.entries(values).map(([name, value]) => ({ name, value }));
   ee.putData = async (d, e, name, value) => { ee.puts.push({ name, value }); };
+  ee.updateThermostatMode = async (d, e, value) => { ee.puts.push({ name: 'authorization', value }); };
+  ee.updateThermostatTemperature = async (d, e, value) => { ee.puts.push({ name: 'setpoint', value }); };
+  ee.updateThermostatState = async (d, e, on) => { ee.puts.push({ name: 'hvacMode', value: on ? 'NORMAL' : 'STOP' }); };
   ee.subscribeTo = (id, fn) => { ee.sub = fn; }; ee.removeSubscription = () => {};
   C.find = () => ee; return ee;
 }
@@ -85,6 +90,34 @@ async function run(driver, caps, values, steps) {
     await dev.onInit(); await tick();
     check(`light: dimmable=${dimmable} → dim ${expectDim ? 'kept' : 'removed'}`, dev.hasCapability('dim') === expectDim && dev.caps.get('onoff') === true, `listens ${dev.multi}`);
   }
+  // Thermostat "use as on/off switch" (valve), e.g. a Tybox that only opens a
+  // Daikin air inlet.
+  const THERMO_CAPS = ['measure_temperature', 'target_temperature', 'thermostat_mode', 'onoff', 'onoff.boost', 'alarm_battery', 'alarm_generic.production', 'alarm_generic.sensor'];
+  {
+    const Klass = require(`${B}/drivers/thermostat/device.js`);
+    const ctl = fakeController({ temperature: 23.3, setpoint: 19.5, authorization: 'COOLING', hvacMode: 'NORMAL' });
+    const dev = new Klass({ id: 't', mac: 'M', deviceId: 3, endpointId: 3 }, {}, [...THERMO_CAPS], { switch_mode: 'cool' });
+    await dev.onInit(); await tick();
+    check('thermostat switch: setpoint/mode/boost hidden', !dev.hasCapability('target_temperature') && !dev.hasCapability('thermostat_mode') && !dev.hasCapability('onoff.boost'));
+    check('thermostat switch: authorization COOLING → on', dev.caps.get('onoff') === true && dev.caps.get('measure_temperature') === 23.3);
+    await dev.listeners.onoff(false); check('thermostat switch: off → authorization STOP', JSON.stringify(ctl.puts.splice(0)) === '[{"name":"authorization","value":"STOP"}]');
+    await dev.listeners.onoff(true); check('thermostat switch: on → COOLING + setpoint 10', JSON.stringify(ctl.puts.splice(0)) === '[{"name":"authorization","value":"COOLING"},{"name":"setpoint","value":10}]');
+    await ctl.sub({ name: 'authorization', value: 'STOP', validity: 'upToDate' }); await tick(); check('thermostat switch: turned off on the Tydom → off', dev.caps.get('onoff') === false);
+    await ctl.sub({ name: 'hvacMode', value: 'NORMAL', validity: 'upToDate' }); await tick(); check('thermostat switch: hvacMode ignored', dev.caps.get('onoff') === false);
+    await dev.onSettings({ newSettings: { switch_mode: 'no' }, changedKeys: ['switch_mode'] });
+    check('thermostat switch: back to normal → controls return', dev.hasCapability('target_temperature') && dev.hasCapability('thermostat_mode') && dev.hasCapability('onoff.boost'));
+    await dev.listeners.onoff(true); check('thermostat normal: onoff → hvacMode again', JSON.stringify(ctl.puts.splice(0)) === '[{"name":"hvacMode","value":"NORMAL"}]');
+    if (dev.errors.length) check('thermostat: no errors', false, dev.errors.join('; '));
+  }
+  {
+    const Klass = require(`${B}/drivers/thermostat/device.js`);
+    const ctl = fakeController({ temperature: 21, setpoint: 20, authorization: 'HEATING', hvacMode: 'NORMAL' });
+    const dev = new Klass({ id: 'u', mac: 'M', deviceId: 4, endpointId: 4 }, {}, [...THERMO_CAPS], {});
+    await dev.onInit(); await tick();
+    check('thermostat without setting: unchanged (setpoint 20, heat)', dev.caps.get('target_temperature') === 20 && dev.caps.get('thermostat_mode') === 'heat' && dev.hasCapability('onoff.boost'));
+    await dev.listeners.target_temperature(21.5); check('thermostat without setting: setpoint write', JSON.stringify(ctl.puts.splice(0)) === '[{"name":"setpoint","value":21.5}]');
+  }
+
   console.log(results.join('\n'));
   const passed = results.filter((r) => r.startsWith("PASS")).length;
   console.log(`\n${passed}/${results.length} passed`);

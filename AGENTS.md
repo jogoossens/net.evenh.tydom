@@ -24,7 +24,7 @@ The app is meant for many users: **nothing user-specific is hardcoded** — ever
 - `tydom/helpers.ts` — endpoint→category resolution based on `first_usage` / metadata.
 - `drivers/light/` — `device.ts` maps `onoff` / `dim` to `updateLightLevel`.
 - `drivers/{shutter,contact,smoke,temperature,heater}/` — built against recorded traffic, not confirmed on hardware; categories come from `resolveEndpointCategory` (pilot-wire = hvac without setpoint but with thermicLevel; smoke/temperature = `sensor` with `techSmokeDefect` / `outTemperature`). Each has its own copy of `pair/start.html`.
-- `drivers/thermostat/` — same pattern for `target_temperature` / `measure_temperature` / `onoff`.
+- `drivers/thermostat/` — device setting `switch_mode` (no / cool / heat) turns a thermostat into an on/off valve switch: removes `target_temperature`, `thermostat_mode`, `onoff.boost`; `onoff` then writes `authorization` + an extreme setpoint and follows `authorization`. Otherwise same pattern for `target_temperature` / `measure_temperature` / `onoff`.
 - `app.json` is generated from `.homeycompose/app.json` — edit the compose file, not the generated one.
 
 ## Install / reinstall

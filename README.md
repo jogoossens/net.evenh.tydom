@@ -113,6 +113,8 @@ Every Tybox thermostat exposed by your Tydom becomes one Homey device with:
 | `alarm_generic.production` | `productionDefect` | Generic production fault |
 | `alarm_generic.sensor` | OR of `tempSensor{Defect,ShortCut,OpenCirc}` | Any temperature sensor fault |
 
+**Use as on/off switch** (device setting): for a thermostat that only opens a valve, e.g. the air inlet of an air conditioner. The device then shows just on/off (plus temperature and alarms): *on* = `authorization` COOLING with setpoint 10 °C (or HEATING with 30 °C), so the thermostat always calls for it and the valve opens; *off* = `authorization` STOP. Turning it on or off on the Tydom side is reflected in Homey.
+
 ### Lights
 
 X3D lights (TYXIA series). Dimmable receivers get `onoff` + `dim`; on/off-only receivers (Tydom reports `level` in steps of 100, e.g. TYXIA 4910) get `onoff` only. Values are seeded on init and updated on Tydom push notifications.

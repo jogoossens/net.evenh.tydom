@@ -10,6 +10,11 @@ const BOOST_DURATION_MINUTES = 65535;
 const BOOST_SETPOINT_HEATING = 30;
 const BOOST_SETPOINT_COOLING = 10;
 
+// "Use as on/off switch": the thermostat only drives a valve. On = always ask
+// for cooling (lowest setpoint) or heating (highest setpoint); off = STOP.
+type SwitchMode = 'no' | 'cool' | 'heat';
+const THERMOSTAT_ONLY_CAPABILITIES = ['target_temperature', 'thermostat_mode', 'onoff.boost'];
+
 class Thermostat extends Device {
   link!: DeviceLink;
   private lastAuthorization: string = 'AUTO';
@@ -21,18 +26,21 @@ class Thermostat extends Device {
   };
   private lastMeasured: number | null = null;
   private lastSetpoint: number | null = null;
+  private registeredListeners = new Set<string>();
 
   private get api(): TydomController {
     return this.link.connected;
   }
 
+  private switchMode: SwitchMode = 'no';
+
+  private static toSwitchMode(value: unknown): SwitchMode {
+    return value === 'cool' || value === 'heat' ? value : 'no';
+  }
+
   async onInit() {
-    if (!this.hasCapability('thermostat_mode')) {
-      await this.addCapability('thermostat_mode');
-    }
-    if (!this.hasCapability('onoff.boost')) {
-      await this.addCapability('onoff.boost');
-    }
+    this.switchMode = Thermostat.toSwitchMode(this.getSetting('switch_mode'));
+    await this.applySwitchMode();
     if (!this.hasCapability('alarm_battery')) {
       await this.addCapability('alarm_battery');
     }
@@ -43,21 +51,7 @@ class Thermostat extends Device {
       await this.addCapability('alarm_generic.sensor');
     }
 
-    this.registerCapabilityListener('target_temperature', async (value) => {
-      await this.setTargetTemperature(value);
-    });
-
-    this.registerCapabilityListener('onoff', async (value) => {
-      await this.setThermostatState(value);
-    });
-
-    this.registerCapabilityListener('thermostat_mode', async (value: string) => {
-      await this.setThermostatMode(value);
-    });
-
-    this.registerCapabilityListener('onoff.boost', async (value: boolean) => {
-      await this.setThermostatBoost(value);
-    });
+    this.registerListeners();
 
     // Receive out-of-band level changes, e.g. performed with physical controls.
     this.link = new DeviceLink(
@@ -71,6 +65,46 @@ class Thermostat extends Device {
     this.link.attach();
 
     this.log('Thermostat has been initialized');
+  }
+
+  // Switch mode hides setpoint/mode/boost; otherwise they're (re-)added.
+  private async applySwitchMode() {
+    for (const capability of THERMOSTAT_ONLY_CAPABILITIES) {
+      if (this.switchMode === 'no' && !this.hasCapability(capability)) {
+        await this.addCapability(capability);
+      }
+      if (this.switchMode !== 'no' && this.hasCapability(capability)) {
+        await this.removeCapability(capability);
+      }
+    }
+  }
+
+  // Listeners only for present capabilities, once each; re-run after the
+  // switch-mode setting changes.
+  private registerListeners() {
+    const listen = (capability: string, fn: (value: any) => Promise<void>) => {
+      if (!this.hasCapability(capability) || this.registeredListeners.has(capability)) return;
+      this.registerCapabilityListener(capability, fn);
+      this.registeredListeners.add(capability);
+    };
+    listen('target_temperature', (value: number) => this.setTargetTemperature(value));
+    listen('onoff', (value: boolean) =>
+      this.switchMode === 'no' ? this.setThermostatState(value) : this.setSwitch(value),
+    );
+    listen('thermostat_mode', (value: string) => this.setThermostatMode(value));
+    listen('onoff.boost', (value: boolean) => this.setThermostatBoost(value));
+  }
+
+  private async setSwitch(on: boolean) {
+    const { endpointId, deviceId } = this.getData();
+    if (on) {
+      const cooling = this.switchMode === 'cool';
+      await this.api.updateThermostatMode(deviceId, endpointId, cooling ? 'COOLING' : 'HEATING');
+      await this.api.updateThermostatTemperature(deviceId, endpointId, cooling ? 10 : 30);
+    } else {
+      await this.api.updateThermostatMode(deviceId, endpointId, 'STOP');
+    }
+    await this.setCapabilityValue('onoff', on);
   }
 
   private async evaluateDeltaTriggers() {
@@ -272,7 +306,9 @@ class Thermostat extends Device {
       case 'setpoint':
         if (newRemoteState.value !== null) {
           const sp = roundToOneDecimal(<number>newRemoteState.value);
-          await this.setCapabilityValue('target_temperature', sp);
+          if (this.hasCapability('target_temperature')) {
+            await this.setCapabilityValue('target_temperature', sp);
+          }
           this.lastSetpoint = sp;
           await this.evaluateDeltaTriggers();
         }
@@ -282,7 +318,8 @@ class Thermostat extends Device {
           const stringValue = <string>newRemoteState.value;
           this.lastHvacMode = stringValue;
           const isOn = stringValue !== 'STOP';
-          await this.setCapabilityValue('onoff', isOn);
+          // In switch mode on/off follows the authorization (below).
+          if (this.switchMode === 'no') await this.setCapabilityValue('onoff', isOn);
         }
         break;
       case 'authorization':
@@ -291,7 +328,12 @@ class Thermostat extends Device {
           const mode = tydomAuthorizationToHomeyMode(
             <string>newRemoteState.value,
           );
-          if (mode) await this.setCapabilityValue('thermostat_mode', mode);
+          if (mode && this.hasCapability('thermostat_mode')) {
+            await this.setCapabilityValue('thermostat_mode', mode);
+          }
+          if (this.switchMode !== 'no') {
+            await this.setCapabilityValue('onoff', newRemoteState.value !== 'STOP');
+          }
         }
         break;
       // On this Tybox model the `boostOn` flag is read-only / inert. We instead
@@ -300,7 +342,7 @@ class Thermostat extends Device {
       // so Homey reflects derogations triggered from anywhere (this app or
       // the Tydom mobile app).
       case 'tempoOn':
-        if (newRemoteState.value !== null) {
+        if (newRemoteState.value !== null && this.hasCapability('onoff.boost')) {
           await this.setCapabilityValue(
             'onoff.boost',
             <boolean>newRemoteState.value,
@@ -342,8 +384,20 @@ class Thermostat extends Device {
     this.log('Thermostat has been added');
   }
 
-  async onSettings({oldSettings: {}, newSettings: {}, changedKeys: {}}): Promise<void> {
-    this.log('Thermostat settings where changed');
+  async onSettings({
+    newSettings,
+    changedKeys,
+  }: {
+    newSettings: Record<string, unknown>;
+    changedKeys: string[];
+  }): Promise<void> {
+    if (!changedKeys.includes('switch_mode')) return;
+    this.switchMode = Thermostat.toSwitchMode(newSettings.switch_mode);
+    await this.applySwitchMode();
+    this.registerListeners();
+    if (this.switchMode !== 'no') {
+      await this.setCapabilityValue('onoff', this.lastAuthorization !== 'STOP');
+    }
   }
 
   async onRenamed(name: string) {
