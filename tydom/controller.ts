@@ -452,7 +452,18 @@ export default class TydomController extends EventEmitter {
         first_usage: firstUsage,
       } = endpoint;
       const uniqueId = TydomController.getUniqueId(deviceId, endpointId);
-      const { metadata } = getEndpointDetailsFromMeta(endpoint, meta);
+      // A gateway can list an endpoint that has no meta (e.g. a leftover of a
+      // removed device); skip it instead of failing the whole scan — which
+      // would leave every device of the gateway unavailable.
+      let metadata;
+      try {
+        ({ metadata } = getEndpointDetailsFromMeta(endpoint, meta));
+      } catch (err) {
+        this.log.warn(
+          `Skipping endpoint deviceId=${deviceId} endpointId=${endpointId} ("${deviceName}"): ${err instanceof Error ? err.message : err}`,
+        );
+        return;
+      }
       const groupId = getEndpointGroupIdFromGroups(endpoint, groups);
       const group = groupId
         ? configGroups.find(({ id }) => id === groupId)

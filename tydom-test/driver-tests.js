@@ -138,6 +138,22 @@ async function run(driver, caps, values, steps) {
     check('invalid address: gateway shows a clear error', c && c.state === 'error' && /not a valid IP address/.test(c.lastError), c && c.lastError);
     Real.remove('001A25BADBAD');
     process.off('unhandledRejection', onUnhandled);
+
+    // A gateway listing an endpoint without meta (leftover of a removed
+    // device) must not fail the scan — that left all devices of a user
+    // unavailable in 1.2.0–1.3.2.
+    const g = Real.upsert(log, { hostname: '', username: '001A25GHOST0', password: 'x', settings: {} });
+    const hvac = (id) => ({ id_device: id, id_endpoint: id, name: `Thermostat ${id}`, first_usage: 'hvac', last_usage: 'electric' });
+    g.sync = async () => ({
+      config: { endpoints: [hvac(1), hvac(2), hvac(3)], groups: [] },
+      groups: {},
+      meta: [1, 3].map((id) => ({ id, endpoints: [{ id, metadata: [{ name: 'setpoint', type: 'numeric', min: 10, max: 30 }, { name: 'temperature', type: 'numeric' }] }] })),
+    });
+    let scanError = null;
+    try { await g.scan(); } catch (err) { scanError = err; }
+    check('scan with a ghost endpoint: completes', scanError === null, scanError && scanError.message);
+    check('scan with a ghost endpoint: other devices kept', g.getDevices(9).map((d) => d.data.deviceId).join() === '1,3', g.getDevices(9).map((d) => d.data.deviceId).join());
+    Real.remove('001A25GHOST0');
   }
 
   console.log(results.join('\n'));

@@ -119,7 +119,7 @@ export const getEndpointGroupIdFromGroups = (
   { id_endpoint: endpointId, id_device: deviceId }: TydomConfigEndpoint,
   groups: TydomGroupsResponse,
 ): number | null => {
-  const group = groups.groups.find(({ devices }) =>
+  const group = (groups?.groups || []).find(({ devices }) =>
     devices.some(
       ({ id, endpoints }) =>
         id === deviceId && endpoints.some(({ id }) => id === endpointId),
