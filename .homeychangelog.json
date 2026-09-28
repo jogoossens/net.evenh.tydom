@@ -31,5 +31,8 @@
   },
   "1.3.1": {
     "en": "Fixes a crash when a gateway address was entered with a space or as an IPv6 address; such an address now shows a clear message instead. New thermostat setting: use it as an on/off switch, e.g. for a thermostat that only opens a valve for an air conditioner."
+  },
+  "1.3.2": {
+    "en": "Fixes a crash when a gateway address was entered with a space or as an IPv6 address; such an address now shows a clear message instead. Thermostats keep their last temperature when the Tydom briefly reports none (for example after restarting the Tydom), instead of showing no temperature. New thermostat setting: use it as an on/off switch, e.g. for a thermostat that only opens a valve for an air conditioner."
   }
 }
