@@ -294,7 +294,9 @@ class Thermostat extends Device {
     switch (newRemoteState.name) {
       // Actual temperature reading
       case 'temperature':
-        // modify current temperature
+        // The gateway reports null while refreshing (e.g. after /refresh/all);
+        // keep the last reading instead of blanking it until the next one.
+        if (typeof newRemoteState.value !== 'number') break;
         await this.setCapabilityValue(
           'measure_temperature',
           <number>newRemoteState.value,

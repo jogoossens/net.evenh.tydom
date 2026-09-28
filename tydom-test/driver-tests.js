@@ -104,6 +104,7 @@ async function run(driver, caps, values, steps) {
     await dev.listeners.onoff(true); check('thermostat switch: on → COOLING + setpoint 10', JSON.stringify(ctl.puts.splice(0)) === '[{"name":"authorization","value":"COOLING"},{"name":"setpoint","value":10}]');
     await ctl.sub({ name: 'authorization', value: 'STOP', validity: 'upToDate' }); await tick(); check('thermostat switch: turned off on the Tydom → off', dev.caps.get('onoff') === false);
     await ctl.sub({ name: 'hvacMode', value: 'NORMAL', validity: 'upToDate' }); await tick(); check('thermostat switch: hvacMode ignored', dev.caps.get('onoff') === false);
+    await ctl.sub({ name: 'temperature', value: null, validity: 'upToDate' }); await tick(); check('thermostat: null temperature keeps last reading', dev.caps.get('measure_temperature') === 23.3, String(dev.caps.get('measure_temperature')));
     await dev.onSettings({ newSettings: { switch_mode: 'no' }, changedKeys: ['switch_mode'] });
     check('thermostat switch: back to normal → controls return', dev.hasCapability('target_temperature') && dev.hasCapability('thermostat_mode') && dev.hasCapability('onoff.boost'));
     await dev.listeners.onoff(true); check('thermostat normal: onoff → hvacMode again', JSON.stringify(ctl.puts.splice(0)) === '[{"name":"hvacMode","value":"NORMAL"}]');
