@@ -3,6 +3,7 @@ import { debounce, get } from 'lodash';
 import { TydomHttpMessage, TydomResponse } from 'tydom-client/lib/utils/tydom';
 import TydomClient, { createClient } from 'tydom-client';
 import { Logger, stringIncludes } from './util';
+import { invalidHostnameMessage, normalizeHostname } from './hostname';
 import {
   Categories,
   ControllerUpdatePayload,
@@ -166,19 +167,28 @@ export default class TydomController extends EventEmitter {
       this.fail(new Error('No address yet'), false);
       return;
     }
-    this.connectAndScan();
+    const hostname = normalizeHostname(this.config.hostname);
+    if (!hostname) {
+      this.fail(new Error(invalidHostnameMessage(this.config.hostname)), false);
+      return;
+    }
+    this.config.hostname = hostname;
+    this.connectAndScan().catch((err) => this.fail(err));
   }
 
   private async connectAndScan() {
     const { hostname } = this.config;
-    const client = this.createApiClient();
+    let client: TydomClient | undefined;
     let timer: NodeJS.Timeout | undefined;
     try {
+      // Inside the try: tydom-client throws synchronously on a bad URL.
+      client = this.createApiClient();
+      const connecting = client;
       await Promise.race([
         (async () => {
-          await client.connect();
+          await connecting.connect();
           await asyncWait(250);
-          await client.get('/ping');
+          await connecting.get('/ping');
           await this.scan();
         })(),
         new Promise((_, reject) => {

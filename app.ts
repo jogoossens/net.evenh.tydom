@@ -24,6 +24,11 @@ class TydomApp extends App {
   async onInit() {
     this.log('Delta Dore Tydom has been initialized');
 
+    // Last line of defence: a stray rejected promise (e.g. inside
+    // tydom-client) is logged instead of crashing the app — and, with a bad
+    // saved setting, crashing again on every restart.
+    process.on('unhandledRejection', (reason) => this.error('Unhandled rejection:', reason));
+
     const logger = new DefaultLogger(this.log, this.error, this.debug);
     // Gateways connect in the background; devices follow their gateway's
     // state, so nothing here waits for a connection.

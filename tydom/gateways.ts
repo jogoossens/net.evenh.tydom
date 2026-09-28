@@ -2,6 +2,7 @@ import { App } from 'homey';
 import TydomController, { GatewayStatus } from './controller';
 import { fetchGateways } from './cloud';
 import { tryReadLocalPassword } from './local-pairing';
+import { invalidHostnameMessage, normalizeHostname } from './hostname';
 import { Logger } from './util';
 
 type HomeyInstance = App['homey'];
@@ -54,7 +55,7 @@ export default class Gateways {
     return Object.values(this.strategy().getDiscoveryResults())
       .map((result: any) => ({
         mac: normalizeMac(result.mac || result.id || ''),
-        address: result.address as string,
+        address: normalizeHostname(result.address) || '',
         configured: false,
       }))
       .filter((d) => d.mac && d.address)
@@ -76,7 +77,9 @@ export default class Gateways {
   }): TydomController {
     const mac = normalizeMac(entry.mac);
     const gateways = this.list();
-    const hostname = entry.hostname || this.addressFor(mac) || '';
+    const typed = entry.hostname ? normalizeHostname(entry.hostname) : undefined;
+    if (entry.hostname && !typed) throw new Error(invalidHostnameMessage(entry.hostname));
+    const hostname = typed || this.addressFor(mac) || '';
     const existing = gateways.find((g) => g.mac === mac);
     if (existing) {
       existing.password = entry.password;
@@ -95,7 +98,9 @@ export default class Gateways {
 
   // One button-pairing attempt; callers repeat it while the user presses the
   // gateway's button. Resolves false while the pairing window is closed.
-  async pairWithButton(mac: string, hostname: string): Promise<boolean> {
+  async pairWithButton(mac: string, input: string): Promise<boolean> {
+    const hostname = normalizeHostname(input);
+    if (!hostname) throw new Error(invalidHostnameMessage(input));
     const password = await tryReadLocalPassword(hostname, normalizeMac(mac));
     if (!password) return false;
     const controller = this.upsert({ mac, hostname, password });

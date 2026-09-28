@@ -118,6 +118,27 @@ async function run(driver, caps, values, steps) {
     await dev.listeners.target_temperature(21.5); check('thermostat without setting: setpoint write', JSON.stringify(ctl.puts.splice(0)) === '[{"name":"setpoint","value":21.5}]');
   }
 
+  // Invalid gateway addresses must never crash the app (tydom-client throws
+  // synchronously on a bad URL; that crashed 1.3.0).
+  {
+    const { normalizeHostname } = require(`${B}/tydom/hostname`);
+    const cases = [[' 192.168.1.50 ', '192.168.1.50'], ['http://192.168.1.50/', '192.168.1.50'], ['fe80::1a:2506:deb2', '[fe80::1a:2506:deb2]'], ['tydom.local', 'tydom.local'], ['my tydom', undefined], ['', undefined]];
+    for (const [input, expected] of cases) check(`hostname ${JSON.stringify(input)} → ${expected}`, normalizeHostname(input) === expected, String(normalizeHostname(input)));
+    const Real = require(`${B}/tydom/controller`).default;
+    const unhandled = [];
+    const onUnhandled = (r) => unhandled.push(r);
+    process.on('unhandledRejection', onUnhandled);
+    const log = { info() {}, debug() {}, warn() {}, error() {} };
+    let threw = false;
+    let c;
+    try { c = Real.upsert(log, { hostname: 'my tydom', username: '001A25BADBAD', password: 'x', settings: {} }); } catch { threw = true; }
+    await tick();
+    check('invalid address: no throw, no unhandled rejection', !threw && unhandled.length === 0, unhandled.map(String).join(';'));
+    check('invalid address: gateway shows a clear error', c && c.state === 'error' && /not a valid IP address/.test(c.lastError), c && c.lastError);
+    Real.remove('001A25BADBAD');
+    process.off('unhandledRejection', onUnhandled);
+  }
+
   console.log(results.join('\n'));
   const passed = results.filter((r) => r.startsWith("PASS")).length;
   console.log(`\n${passed}/${results.length} passed`);
