@@ -1,5 +1,9 @@
 # Delta Dore Tydom for Homey Pro
 
+**[➜ Install Delta Dore Tydom from the Homey App Store](https://homey.app/a/com.jogoossens.tydom)**
+
+That's the easiest way to get the app, and it keeps itself up to date. Installing from this repository is only needed for development.
+
 > # ✅ Works with every Tydom gateway — set up with one button press
 >
 > **Connect a Delta Dore Tydom 1.0, Tydom 2.0, Tydom Home or Tydom Pro to [Homey Pro](https://homey.app/).** Add a device, Homey finds your Tydom on the network, and you connect it by briefly pressing the button on the Tydom (or by signing in with your Tydom app account).
